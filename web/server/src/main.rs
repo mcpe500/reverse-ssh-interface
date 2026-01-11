@@ -25,7 +25,15 @@ async fn main() {
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr_str = format!("{}:{}", host, port);
+    
+    let addr: SocketAddr = addr_str.parse().unwrap_or_else(|e| {
+        tracing::error!("Invalid HOST or PORT ({:?}): {}", addr_str, e);
+        std::process::exit(1);
+    });
+
     tracing::info!("listening on {}", addr);
     
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
