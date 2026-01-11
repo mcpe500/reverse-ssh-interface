@@ -1,0 +1,10 @@
+[package]
+name = "reverse_ssh_web_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reverse_ssh_core = { path = "../../core" }
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
