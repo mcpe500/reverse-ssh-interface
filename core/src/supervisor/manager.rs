@@ -54,7 +54,7 @@ impl SessionManager {
         // 2. Spawn SSH
         // We clone profile because we need it for spawning, 
         // but we already cloned ID.
-        let mut child = spawn::spawn_session(&profile)?;
+        let (mut child, _askpass) = spawn::spawn_session(&profile)?;
         let pid = child.id();
         
         // 3. Update Status
@@ -69,6 +69,9 @@ impl SessionManager {
         let profile_id = id.clone();
         
         let task = tokio::spawn(async move {
+            // Keep _askpass alive until the process exits
+            let _keep = _askpass;
+
             // Wait for process to exit
             let result = child.wait().await;
             

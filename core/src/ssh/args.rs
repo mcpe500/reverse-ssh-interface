@@ -1,12 +1,12 @@
-use crate::types::profile::Profile;
+use crate::types::profile::{Profile, AuthMethod};
 
 pub fn build_ssh_args(profile: &Profile) -> Vec<String> {
     let mut args = Vec::new();
 
     // Options first
-    if let Some(key) = &profile.key_path {
+    if let AuthMethod::IdentityFile(path) = &profile.auth {
         args.push("-i".to_string());
-        args.push(key.clone());
+        args.push(path.clone());
     }
 
     args.push("-p".to_string());
@@ -23,8 +23,15 @@ pub fn build_ssh_args(profile: &Profile) -> Vec<String> {
     args.push(format!("ServerAliveCountMax={}", profile.advanced.server_alive_count_max));
     
     // Non-interactive options
-    args.push("-o".to_string());
-    args.push("BatchMode=yes".to_string());
+    // Only use BatchMode for non-password auth
+    if !matches!(profile.auth, AuthMethod::Password(_)) {
+        args.push("-o".to_string());
+        args.push("BatchMode=yes".to_string());
+    } else {
+        // Ensure we DON'T use batch mode for password, otherwise it fails immediately
+        args.push("-o".to_string());
+        args.push("BatchMode=no".to_string());
+    }
 
     // Host key checking - reasonable default for automated tools
     args.push("-o".to_string());

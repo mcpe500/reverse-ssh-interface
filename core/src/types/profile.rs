@@ -1,6 +1,17 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type", content = "value")]
+pub enum AuthMethod {
+    /// Use SSH Agent (default)
+    Agent,
+    /// Use a specific private key file
+    IdentityFile(String),
+    /// Use a plain password (handled via SSH_ASKPASS)
+    Password(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Profile {
     /// Unique identifier for the profile (e.g., "prod-db", "my-vps")
     pub id: String,
@@ -15,8 +26,9 @@ pub struct Profile {
     /// SSH User
     pub user: String,
 
-    /// Path to private key (optional, prefers ssh-agent if None)
-    pub key_path: Option<String>,
+    /// Authentication Method
+    #[serde(default = "default_auth")]
+    pub auth: AuthMethod,
 
     /// List of reverse forwards
     #[serde(default)]
@@ -88,6 +100,10 @@ fn default_alive_count() -> u64 {
     3
 }
 
+fn default_auth() -> AuthMethod {
+    AuthMethod::Agent
+}
+
 impl Profile {
     pub fn new(id: impl Into<String>, host: impl Into<String>, user: impl Into<String>) -> Self {
         Self {
@@ -95,7 +111,7 @@ impl Profile {
             host: host.into(),
             port: default_port(),
             user: user.into(),
-            key_path: None,
+            auth: AuthMethod::Agent,
             forwards: Vec::new(),
             advanced: AdvancedOptions::default(),
         }

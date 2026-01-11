@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::Subcommand;
-use inquire::{Text, Confirm};
+use inquire::{Text, Confirm, Select, Password};
 use reverse_ssh_core::{
     config::load,
-    types::profile::{Profile, ForwardRule},
+    types::profile::{Profile, ForwardRule, AuthMethod},
 };
 
 #[derive(Subcommand, Debug, Clone)]
@@ -31,6 +31,11 @@ async fn list_profiles() -> Result<()> {
     println!("Found {} profiles:", config.profiles.len());
     for (id, profile) in config.profiles {
         println!("- [{}] {}@{} (Port: {})", id, profile.user, profile.host, profile.port);
+        match &profile.auth {
+            AuthMethod::Agent => println!("    Auth: Agent"),
+            AuthMethod::IdentityFile(path) => println!("    Auth: Key ({})", path),
+            AuthMethod::Password(_) => println!("    Auth: Password (Stored)"),
+        }
         for fwd in profile.forwards {
             println!("    R: {}", fwd.to_arg_string());
         }
@@ -50,10 +55,26 @@ async fn add_profile() -> Result<()> {
     let mut profile = Profile::new(&id, &host, &user);
     profile.port = port;
 
-    // Optional Key Path
-    if Confirm::new("Specify a private key path?").with_default(false).prompt()? {
-        let key = Text::new("Path to private key:").prompt()?;
-        profile.key_path = Some(key);
+    // Authentication Method Selection
+    let auth_options = vec!["SSH Agent", "Private Key File", "Password"];
+    let auth_choice = Select::new("Authentication Method:", auth_options).prompt()?;
+
+    match auth_choice {
+        "SSH Agent" => {
+            profile.auth = AuthMethod::Agent;
+        }
+        "Private Key File" => {
+            let key = Text::new("Path to private key:").prompt()?;
+            profile.auth = AuthMethod::IdentityFile(key);
+        }
+        "Password" => {
+            let pass = Password::new("Enter SSH Password:")
+                .with_display_mode(inquire::PasswordDisplayMode::Masked)
+                .without_confirmation()
+                .prompt()?;
+            profile.auth = AuthMethod::Password(pass);
+        }
+        _ => unreachable!(),
     }
 
     // Add forwards
