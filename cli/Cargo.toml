@@ -10,3 +10,7 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 inquire = "0.9.1"
 tracing-subscriber = "0.3.22"
+
+[dev-dependencies]
+assert_cmd = "2.1.2"
+predicates = "3.1.3"

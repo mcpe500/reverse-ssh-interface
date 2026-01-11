@@ -4,15 +4,34 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use reverse_ssh_core::config::load;
+use reverse_ssh_core::{config::load, types::session::Session};
 use crate::state::AppState;
 use serde_json::json;
 
+#[utoipa::path(
+    get,
+    path = "/api/sessions",
+    responses(
+        (status = 200, description = "List all active sessions", body = [Session])
+    )
+)]
 pub async fn list_sessions(State(state): State<AppState>) -> impl IntoResponse {
     let sessions = state.session_manager.list_sessions().await;
     Json(sessions)
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/sessions/{id}/start",
+    params(
+        ("id" = String, Path, description = "Profile ID to start session for")
+    ),
+    responses(
+        (status = 200, description = "Session started successfully"),
+        (status = 404, description = "Profile not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn start_session(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -33,6 +52,17 @@ pub async fn start_session(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/sessions/{id}/stop",
+    params(
+        ("id" = String, Path, description = "Profile ID to stop session for")
+    ),
+    responses(
+        (status = 200, description = "Session stopped successfully"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn stop_session(
     State(state): State<AppState>,
     Path(id): Path<String>,

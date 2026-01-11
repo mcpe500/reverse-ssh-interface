@@ -21,6 +21,21 @@ enum Commands {
         /// Profile ID
         id: String,
     },
+    /// Stop a reverse SSH tunnel
+    Down {
+        /// Profile ID
+        id: String,
+    },
+    /// Show status of tunnels
+    Status,
+    /// View logs for a session
+    Logs {
+        /// Profile ID
+        id: String,
+        /// Follow logs
+        #[arg(short, long)]
+        follow: bool,
+    },
     /// Manage profiles
     Profile {
         #[command(subcommand)]
@@ -40,6 +55,15 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Up { id } => {
             cmd::up::run(id).await?;
+        }
+        Commands::Down { id } => {
+            cmd::down::run(id).await?;
+        }
+        Commands::Status => {
+            cmd::status::run().await?;
+        }
+        Commands::Logs { id, follow } => {
+            cmd::logs::run(id, follow).await?;
         }
         Commands::Profile { action } => {
             cmd::profile::run(action).await?;

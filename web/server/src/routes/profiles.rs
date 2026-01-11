@@ -10,6 +10,14 @@ use reverse_ssh_core::{
 };
 use serde_json::json;
 
+#[utoipa::path(
+    get,
+    path = "/api/profiles",
+    responses(
+        (status = 200, description = "List all profiles", body = [Profile]),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn list_profiles() -> impl IntoResponse {
     match load::load_config().await {
         Ok(config) => {
@@ -24,6 +32,15 @@ pub async fn list_profiles() -> impl IntoResponse {
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/profiles",
+    request_body = Profile,
+    responses(
+        (status = 201, description = "Profile created successfully", body = Profile),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn create_profile(Json(profile): Json<Profile>) -> impl IntoResponse {
     match load::load_config().await {
         Ok(mut config) => {
@@ -43,6 +60,18 @@ pub async fn create_profile(Json(profile): Json<Profile>) -> impl IntoResponse {
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/profiles/{id}",
+    params(
+        ("id" = String, Path, description = "Profile ID")
+    ),
+    responses(
+        (status = 200, description = "Get profile by ID", body = Profile),
+        (status = 404, description = "Profile not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn get_profile(Path(id): Path<String>) -> impl IntoResponse {
     match load::load_config().await {
         Ok(config) => {
@@ -59,6 +88,18 @@ pub async fn get_profile(Path(id): Path<String>) -> impl IntoResponse {
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/profiles/{id}",
+    params(
+        ("id" = String, Path, description = "Profile ID")
+    ),
+    responses(
+        (status = 200, description = "Profile deleted successfully"),
+        (status = 404, description = "Profile not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn delete_profile(Path(id): Path<String>) -> impl IntoResponse {
     match load::load_config().await {
         Ok(mut config) => {

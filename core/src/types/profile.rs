@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[serde(tag = "type", content = "value")]
 pub enum AuthMethod {
     /// Use SSH Agent (default)
@@ -11,7 +12,17 @@ pub enum AuthMethod {
     Password(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+impl std::fmt::Debug for AuthMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Agent => write!(f, "Agent"),
+            Self::IdentityFile(path) => write!(f, "IdentityFile({:?})", path),
+            Self::Password(_) => write!(f, "Password([REDACTED])"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct Profile {
     /// Unique identifier for the profile (e.g., "prod-db", "my-vps")
     pub id: String,
@@ -39,7 +50,7 @@ pub struct Profile {
     pub advanced: AdvancedOptions,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct ForwardRule {
     /// The port on the REMOTE server to open
     pub remote_port: u16,
@@ -56,7 +67,7 @@ pub struct ForwardRule {
     pub local_port: u16,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct AdvancedOptions {
     #[serde(default = "default_alive_interval")]
     pub server_alive_interval: u64,

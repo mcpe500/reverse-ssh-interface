@@ -11,8 +11,8 @@ pub fn spawn_session(profile: &Profile) -> Result<(Child, Option<NamedTempFile>)
     let ssh_path = detect::find_ssh_binary()?;
     let ssh_args = args::build_ssh_args(profile);
 
-    // TODO: Logging the command for debug purposes (redact info later)
-    tracing::debug!("Spawning: {:?} {:?}", ssh_path, ssh_args);
+    let safe_args = args::redact_ssh_args(&ssh_args);
+    tracing::debug!("Spawning: {:?} {:?}", ssh_path, safe_args);
 
     let mut cmd = Command::new(ssh_path);
     cmd.args(ssh_args)

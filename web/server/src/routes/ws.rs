@@ -24,7 +24,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                 let sessions = state.session_manager.list_sessions().await;
                 let msg = json!({ "type": "sessions_update", "data": sessions }).to_string();
 
-                if sender.send(Message::Text(msg)).await.is_err() {
+                if sender.send(Message::Text(msg.into())).await.is_err() {
                     break;
                 }
             }

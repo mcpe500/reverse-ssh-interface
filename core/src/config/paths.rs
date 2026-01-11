@@ -13,3 +13,11 @@ pub fn app_config_dir() -> Result<PathBuf> {
 pub fn main_config_file() -> Result<PathBuf> {
     Ok(app_config_dir()?.join("config.toml"))
 }
+
+pub fn sessions_dir() -> Result<PathBuf> {
+    Ok(app_config_dir()?.join("sessions"))
+}
+
+pub fn logs_dir() -> Result<PathBuf> {
+    Ok(app_config_dir()?.join("logs"))
+}

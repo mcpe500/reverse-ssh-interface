@@ -56,3 +56,68 @@ pub fn build_ssh_args(profile: &Profile) -> Vec<String> {
 
     args
 }
+
+pub fn redact_ssh_args(args: &[String]) -> Vec<String> {
+    let mut redacted = Vec::new();
+    let mut redact_next = false;
+    
+    for arg in args {
+        if redact_next {
+            redacted.push("[REDACTED]".to_string());
+            redact_next = false;
+        } else if arg == "-i" {
+            redacted.push(arg.clone());
+            redact_next = true;
+        } else {
+            redacted.push(arg.clone());
+        }
+    }
+    
+    redacted
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::profile::{Profile, ForwardRule};
+
+    #[test]
+    fn test_build_ssh_args_basic() {
+        let mut profile = Profile::new("test", "example.com", "user");
+        profile.port = 2222;
+        profile.forwards.push(ForwardRule {
+            remote_port: 8080,
+            remote_bind: "0.0.0.0".to_string(),
+            local_host: "localhost".to_string(),
+            local_port: 80,
+        });
+
+        let args = build_ssh_args(&profile);
+        
+        assert!(args.contains(&"-p".to_string()));
+        assert!(args.contains(&"2222".to_string()));
+        assert!(args.contains(&"-R".to_string()));
+        assert!(args.contains(&"0.0.0.0:8080:localhost:80".to_string()));
+        assert!(args.contains(&"-N".to_string()));
+        assert!(args.contains(&"user@example.com".to_string()));
+    }
+
+    #[test]
+    fn test_redact_ssh_args() {
+        let args = vec![
+            "-i".to_string(),
+            "/path/to/secret_key".to_string(),
+            "-p".to_string(),
+            "22".to_string(),
+            "user@host".to_string(),
+        ];
+        
+        let redacted = redact_ssh_args(&args);
+        
+        assert_eq!(redacted[0], "-i");
+        assert_eq!(redacted[1], "[REDACTED]");
+        assert_eq!(redacted[2], "-p");
+        assert_eq!(redacted[3], "22");
+        assert_eq!(redacted[4], "user@host");
+    }
+}

@@ -5,10 +5,7 @@ use tower_http::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use std::net::SocketAddr;
-
-pub mod routes;
-pub mod state;
-pub mod static_files;
+use reverse_ssh_web_server::{routes, state};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
