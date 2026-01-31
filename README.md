@@ -37,6 +37,22 @@ This project is organized as a monorepo with a Rust workspace:
     cargo run -p reverse_ssh_web_server
     ```
 
+## Testing
+
+To verify the installation and integrity of the project, use the following commands:
+
+1.  **Check Compilation:**
+    Ensure all crates in the workspace compile correctly without errors.
+    ```bash
+    cargo check --workspace
+    ```
+
+2.  **Run Tests:**
+    Execute all unit and integration tests across the workspace.
+    ```bash
+    cargo test --workspace
+    ```
+
 ## Documentation
 
 See the `docs/` directory for detailed design documents:
