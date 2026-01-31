@@ -1,0 +1,63 @@
+# Reverse SSH Interface - Default Configuration
+# This file is automatically created on first run.
+# You can customize these settings as needed.
+
+[general]
+# Whether to start minimized (GUI only)
+start_minimized = false
+
+# Auto-start sessions that were running when the app last closed
+auto_start_sessions = false
+
+# Default profile to start (by name)
+# default_profile = "my-server"
+
+[ssh]
+# Custom SSH binary path (auto-detected if not set)
+# binary_path = "C:\\Windows\\System32\\OpenSSH\\ssh.exe"
+
+# Default keepalive interval in seconds
+default_keepalive_interval = 20
+
+# Default keepalive count before disconnect
+default_keepalive_count = 3
+
+# Strict host key checking mode: "yes", "accept_new", or "no"
+# - "yes": Always verify, reject unknown hosts
+# - "accept_new": Accept new hosts, reject changed keys (recommended)
+# - "no": Never verify (insecure, not recommended)
+strict_host_key_checking = "accept_new"
+
+# Use app-managed known_hosts file (instead of system default)
+use_app_known_hosts = true
+
+# Default SSH options applied to all connections
+# [ssh.default_options]
+# Compression = "yes"
+# TCPKeepAlive = "yes"
+
+[logging]
+# Log level: trace, debug, info, warn, error
+level = "info"
+
+# Enable file logging
+file_logging = true
+
+# Maximum log file size in MB before rotation
+max_file_size_mb = 10
+
+# Number of rotated log files to keep
+max_files = 5
+
+[web]
+# Enable the web server interface
+enabled = false
+
+# Bind address (use 127.0.0.1 for local only)
+bind_address = "127.0.0.1"
+
+# Port number
+port = 3847
+
+# Enable CORS for development
+cors_enabled = false

@@ -1,0 +1,64 @@
+# Example Profile: Expose local web server remotely
+# Copy this file to your profiles directory and customize it.
+#
+# Profile location (varies by OS):
+# - Linux: ~/.config/reverse-ssh-interface/profiles/
+# - macOS: ~/Library/Application Support/com.reverse-ssh.reverse-ssh-interface/profiles/
+# - Windows: %APPDATA%\reverse-ssh\reverse-ssh-interface\config\profiles\
+
+# Profile name (used for display and CLI commands)
+name = "my-server"
+
+# SSH server hostname or IP address
+host = "example.com"
+
+# SSH server port (default: 22)
+port = 22
+
+# SSH username
+user = "myuser"
+
+# Authentication method
+# Options:
+# - { type = "agent" }         - Use SSH agent (recommended)
+# - { type = "key_file", path = "/path/to/key" }
+# - { type = "password" }      - Not recommended, requires sshpass
+[auth]
+type = "agent"
+
+# Reverse tunnels to establish
+# Format: remote_port forwards to local_host:local_port
+[[tunnels]]
+remote_bind = "localhost"   # Bind address on remote server
+remote_port = 8080          # Port on remote server
+local_host = "localhost"    # Local address to forward to
+local_port = 3000           # Local port to forward to
+
+# You can add multiple tunnels
+# [[tunnels]]
+# remote_port = 8443
+# local_port = 443
+
+# Keep-alive settings (in seconds)
+keepalive_interval = 20
+keepalive_count = 3
+
+# Auto-reconnect on failure
+auto_reconnect = true
+
+# Maximum reconnection attempts (0 = unlimited)
+max_reconnect_attempts = 0
+
+# Additional SSH options (optional)
+# [extra_options]
+# Compression = "yes"
+# LogLevel = "DEBUG"
+
+# Custom SSH binary path (uses detected if not set)
+# ssh_path = "/usr/bin/ssh"
+
+# Custom known_hosts file (uses app-managed if not set)
+# known_hosts_file = "/path/to/known_hosts"
+
+# Custom identity file (overrides auth method)
+# identity_file = "/path/to/id_rsa"
