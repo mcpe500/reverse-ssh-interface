@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse SSH Interface</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    <span>RSSH</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="9"/>
+                        <rect x="14" y="3" width="7" height="5"/>
+                        <rect x="14" y="12" width="7" height="9"/>
+                        <rect x="3" y="16" width="7" height="5"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-tab="profiles">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span>Profiles</span>
+                </button>
+                <button class="nav-item" data-tab="sessions">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                    <span>Sessions</span>
+                </button>
+                <button class="nav-item" data-tab="logs">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    <span>Logs</span>
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator" id="managerStatus">
+                    <span class="status-dot"></span>
+                    <span>Manager Ready</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <section class="tab-content active" id="tab-dashboard">
+                <header class="content-header">
+                    <h1>Dashboard</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="showQuickConnect()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Quick Connect
+                        </button>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <!-- Stats Cards -->
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-icon active">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="activeSessionsCount">0</span>
+                                <span class="stat-label">Active Sessions</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon profiles">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="profilesCount">0</span>
+                                <span class="stat-label">Profiles</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon tunnels">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                    <path d="M2 17l10 5 10-5"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="tunnelsCount">0</span>
+                                <span class="stat-label">Active Tunnels</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Quick Actions</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-actions" id="quickProfilesList">
+                                <p class="empty-state">No profiles yet. Create one to get started!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Sessions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Active Sessions</h2>
+                            <button class="btn btn-ghost btn-sm" onclick="stopAllSessions()" id="stopAllBtn" style="display: none;">
+                                Stop All
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="sessions-list" id="dashboardSessionsList">
+                                <p class="empty-state">No active sessions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profiles Tab -->
+            <section class="tab-content" id="tab-profiles">
+                <header class="content-header">
+                    <h1>Profiles</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="showCreateProfileModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            New Profile
+                        </button>
+                    </div>
+                </header>
+
+                <div class="profiles-grid" id="profilesGrid">
+                    <p class="empty-state">No profiles found. Create your first profile!</p>
+                </div>
+            </section>
+
+            <!-- Sessions Tab -->
+            <section class="tab-content" id="tab-sessions">
+                <header class="content-header">
+                    <h1>Sessions</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="refreshSessions()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <polyline points="1 20 1 14 7 14"/>
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </header>
+
+                <div class="sessions-table-container">
+                    <table class="sessions-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Profile</th>
+                                <th>Session ID</th>
+                                <th>Started</th>
+                                <th>PID</th>
+                                <th>Reconnects</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessionsTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">No active sessions</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Logs Tab -->
+            <section class="tab-content" id="tab-logs">
+                <header class="content-header">
+                    <h1>Logs</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-ghost" onclick="clearLogs()">Clear</button>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="autoScrollLogs" checked>
+                            Auto-scroll
+                        </label>
+                    </div>
+                </header>
+
+                <div class="logs-container">
+                    <div class="logs-output" id="logsOutput">
+                        <div class="log-entry info">
+                            <span class="log-time">[--:--:--]</span>
+                            <span class="log-message">Waiting for events...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Tab -->
+            <section class="tab-content" id="tab-settings">
+                <header class="content-header">
+                    <h1>Settings</h1>
+                </header>
+
+                <div class="settings-container">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Application</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Profiles Directory</label>
+                                    <p class="setting-description">Location where profile configurations are stored</p>
+                                </div>
+                                <div class="setting-value">
+                                    <code id="profilesPath">Loading...</code>
+                                    <button class="btn btn-ghost btn-sm" onclick="openProfilesFolder()">Open</button>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Start Minimized</label>
+                                    <p class="setting-description">Start the application minimized to system tray</p>
+                                </div>
+                                <div class="setting-value">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="startMinimized">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>SSH Settings</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Default Keep-alive Interval</label>
+                                    <p class="setting-description">Seconds between keep-alive packets</p>
+                                </div>
+                                <div class="setting-value">
+                                    <input type="number" id="keepaliveInterval" value="20" min="5" max="300" class="input-sm">
+                                    <span>seconds</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Host Key Checking</label>
+                                    <p class="setting-description">How to handle unknown SSH hosts</p>
+                                </div>
+                                <div class="setting-value">
+                                    <select id="hostKeyChecking" class="select-sm">
+                                        <option value="accept_new">Accept New (Recommended)</option>
+                                        <option value="yes">Strict</option>
+                                        <option value="no">Disabled (Insecure)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>About</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="about-info">
+                                <p><strong>Reverse SSH Interface</strong></p>
+                                <p>Version 0.1.0</p>
+                                <p class="text-muted">A powerful tool for managing reverse SSH tunnels</p>
+                                <div class="about-links">
+                                    <a href="#" onclick="openExternal('https://github.com/mcpe500/reverse-ssh-interface')">GitHub</a>
+                                    <a href="#" onclick="openExternal('https://github.com/mcpe500/reverse-ssh-interface/issues')">Report Issue</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Create Profile Modal -->
+    <div class="modal" id="createProfileModal">
+        <div class="modal-backdrop" onclick="closeModal('createProfileModal')"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Profile</h2>
+                <button class="modal-close" onclick="closeModal('createProfileModal')">&times;</button>
+            </div>
+            <form id="createProfileForm" onsubmit="createProfile(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="profileName">Profile Name *</label>
+                        <input type="text" id="profileName" required placeholder="my-server">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profileHost">Host *</label>
+                            <input type="text" id="profileHost" required placeholder="example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="profilePort">Port</label>
+                            <input type="number" id="profilePort" placeholder="22" min="1" max="65535">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileUser">Username *</label>
+                        <input type="text" id="profileUser" required placeholder="root">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileAuth">Authentication</label>
+                        <select id="profileAuth" onchange="toggleKeyPath()">
+                            <option value="agent">SSH Agent (Recommended)</option>
+                            <option value="key">Key File</option>
+                            <option value="password">Password</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="keyPathGroup" style="display: none;">
+                        <label for="profileKeyPath">Key File Path</label>
+                        <input type="text" id="profileKeyPath" placeholder="~/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group">
+                        <label>Tunnels</label>
+                        <div class="tunnels-editor" id="tunnelsEditor">
+                            <div class="tunnel-row">
+                                <input type="number" class="tunnel-remote" placeholder="Remote Port" min="1" max="65535">
+                                <span class="tunnel-arrow">→</span>
+                                <input type="text" class="tunnel-local-host" placeholder="localhost">
+                                <span>:</span>
+                                <input type="number" class="tunnel-local-port" placeholder="Local Port" min="1" max="65535">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="removeTunnelRow(this)">×</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="addTunnelRow()">+ Add Tunnel</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="profileAutoReconnect" checked>
+                            Auto-reconnect on failure
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('createProfileModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Connect Modal -->
+    <div class="modal" id="quickConnectModal">
+        <div class="modal-backdrop" onclick="closeModal('quickConnectModal')"></div>
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h2>Quick Connect</h2>
+                <button class="modal-close" onclick="closeModal('quickConnectModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Select a profile to connect:</p>
+                <div class="quick-connect-list" id="quickConnectList">
+                    <p class="empty-state">No profiles available</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('quickConnectModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Detail Modal -->
+    <div class="modal" id="profileDetailModal">
+        <div class="modal-backdrop" onclick="closeModal('profileDetailModal')"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="profileDetailTitle">Profile Details</h2>
+                <button class="modal-close" onclick="closeModal('profileDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="profileDetailBody">
+                <!-- Filled dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="deleteCurrentProfile()">Delete</button>
+                <button type="button" class="btn btn-ghost" onclick="closeModal('profileDetailModal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="connectCurrentProfile()">Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-backdrop" onclick="closeModal('confirmModal')"></div>
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h2 id="confirmTitle">Confirm</h2>
+                <button class="modal-close" onclick="closeModal('confirmModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmBtn" onclick="confirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

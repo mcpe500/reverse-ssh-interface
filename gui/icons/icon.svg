@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  
+  <!-- SSH Arrow/Tunnel Symbol -->
+  <g fill="none" stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left bracket -->
+    <path d="M128 160 L96 256 L128 352"/>
+    
+    <!-- Right bracket -->
+    <path d="M384 160 L416 256 L384 352"/>
+    
+    <!-- Arrows (bidirectional tunnel) -->
+    <line x1="160" y1="256" x2="280" y2="256"/>
+    <polyline points="240,220 280,256 240,292"/>
+    
+    <line x1="352" y1="256" x2="232" y2="256"/>
+    <polyline points="272,220 232,256 272,292"/>
+  </g>
+  
+  <!-- Connection dots -->
+  <circle cx="176" cy="180" r="12" fill="white" opacity="0.8"/>
+  <circle cx="336" cy="180" r="12" fill="white" opacity="0.8"/>
+  <circle cx="176" cy="332" r="12" fill="white" opacity="0.8"/>
+  <circle cx="336" cy="332" r="12" fill="white" opacity="0.8"/>
+</svg>
