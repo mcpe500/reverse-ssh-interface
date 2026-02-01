@@ -18,7 +18,7 @@ pub struct TunnelSpec {
 }
 
 fn default_bind_address() -> String {
-    "localhost".to_string()
+    "0.0.0.0".to_string()
 }
 
 impl TunnelSpec {
@@ -33,9 +33,15 @@ impl TunnelSpec {
 
     /// Format as SSH -R argument: [bind_address:]port:host:hostport
     pub fn to_ssh_arg(&self) -> String {
+        // Sanitize the bind address (remove http://, etc) in case user pasted a URL
+        let bind = self.remote_bind
+            .trim_start_matches("http://")
+            .trim_start_matches("https://")
+            .trim_end_matches('/');
+            
         format!(
             "{}:{}:{}:{}",
-            self.remote_bind, self.remote_port, self.local_host, self.local_port
+            bind, self.remote_port, self.local_host, self.local_port
         )
     }
 }
