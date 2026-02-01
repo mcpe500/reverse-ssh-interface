@@ -15,7 +15,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use reverse_ssh_core::{
-    config::{load_config, profiles_dir, load_profiles, save_profile, delete_profile as core_delete_profile, load_profile_from},
+    config::{load_config, profiles_dir, load_profiles, save_profile, update_profile as core_update_profile, delete_profile as core_delete_profile},
     supervisor::{SessionManager, SessionManagerHandle},
     types::{Profile, TunnelSpec, AuthMethod, Session, Event},
     error::CoreError,
@@ -90,6 +90,19 @@ pub struct CreateProfileRequest {
     pub auto_reconnect: Option<bool>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdateProfileRequest {
+    pub existing_name: String,
+    pub name: String,
+    pub host: String,
+    pub port: Option<u16>,
+    pub user: String,
+    pub auth: Option<String>,
+    pub key_path: Option<String>,
+    pub tunnels: Vec<TunnelInfo>,
+    pub auto_reconnect: Option<bool>,
+}
+
 impl From<&Profile> for ProfileInfo {
     fn from(profile: &Profile) -> Self {
         Self {
@@ -119,6 +132,14 @@ impl From<&Profile> for ProfileInfo {
 // Tauri Commands
 // ============================================================================
 
+fn load_profile_by_name(name: &str) -> Result<Profile, CoreError> {
+    let profiles = load_profiles()?;
+    profiles
+        .into_iter()
+        .find(|p| p.name == name)
+        .ok_or_else(|| CoreError::ProfileNotFound(name.to_string()))
+}
+
 /// Get all profiles
 #[tauri::command]
 async fn get_profiles() -> Result<Vec<ProfileInfo>, String> {
@@ -131,10 +152,7 @@ async fn get_profiles() -> Result<Vec<ProfileInfo>, String> {
 /// Get a specific profile by name
 #[tauri::command]
 async fn get_profile(name: String) -> Result<ProfileInfo, String> {
-    let profiles_path = profiles_dir();
-    let profile_path = profiles_path.join(format!("{}.toml", name));
-    
-    let profile = load_profile_from(&profile_path)
+    let profile = load_profile_by_name(&name)
         .map_err(|e: CoreError| e.to_string())?;
     
     Ok(ProfileInfo::from(&profile))
@@ -190,14 +208,69 @@ async fn create_profile(request: CreateProfileRequest) -> Result<ProfileInfo, St
     Ok(ProfileInfo::from(&profile))
 }
 
+/// Update an existing profile (supports rename)
+#[tauri::command]
+async fn update_profile(request: UpdateProfileRequest) -> Result<ProfileInfo, String> {
+    let mut profile = load_profile_by_name(&request.existing_name)
+        .map_err(|e: CoreError| e.to_string())?;
+
+    if request.tunnels.is_empty() {
+        return Err("At least one tunnel is required".to_string());
+    }
+
+    let auth = match request.auth.as_deref() {
+        Some("password") => AuthMethod::Password,
+        Some(s) if s.starts_with("key:") => {
+            let path = s.strip_prefix("key:").unwrap_or_default().to_string();
+            if path.trim().is_empty() {
+                return Err("Key file path is required for key auth".to_string());
+            }
+            AuthMethod::KeyFile { path }
+        }
+        _ => {
+            if let Some(key_path) = request.key_path {
+                if key_path.trim().is_empty() {
+                    return Err("Key file path is required for key auth".to_string());
+                }
+                AuthMethod::KeyFile { path: key_path }
+            } else {
+                AuthMethod::Agent
+            }
+        }
+    };
+
+    let tunnels: Vec<TunnelSpec> = request
+        .tunnels
+        .iter()
+        .map(|t| TunnelSpec {
+            remote_bind: t.remote_bind.clone(),
+            remote_port: t.remote_port,
+            local_host: t.local_host.clone(),
+            local_port: t.local_port,
+        })
+        .collect();
+
+    profile.name = request.name;
+    profile.host = request.host;
+    profile.port = request.port.unwrap_or(22);
+    profile.user = request.user;
+    profile.auth = auth;
+    profile.tunnels = tunnels;
+    if let Some(auto_reconnect) = request.auto_reconnect {
+        profile.auto_reconnect = auto_reconnect;
+    }
+
+    core_update_profile(&request.existing_name, &profile)
+        .map_err(|e: CoreError| e.to_string())?;
+
+    Ok(ProfileInfo::from(&profile))
+}
+
 /// Delete a profile
 #[tauri::command]
 async fn delete_profile(name: String) -> Result<(), String> {
     // Load the profile first to get its full data
-    let profiles_path = profiles_dir();
-    let profile_path = profiles_path.join(format!("{}.toml", name));
-    
-    let profile = load_profile_from(&profile_path)
+    let profile = load_profile_by_name(&name)
         .map_err(|e: CoreError| e.to_string())?;
     
     core_delete_profile(&profile)
@@ -212,10 +285,7 @@ async fn start_session(
     app_handle: AppHandle,
 ) -> Result<SessionInfo, String> {
     // Load profile
-    let profiles_path = profiles_dir();
-    let profile_path = profiles_path.join(format!("{}.toml", name));
-    
-    let profile = load_profile_from(&profile_path)
+    let profile = load_profile_by_name(&name)
         .map_err(|e: CoreError| e.to_string())?;
 
     let manager_handle = state.manager_handle.read().await;
@@ -501,6 +571,7 @@ fn main() {
             get_profiles,
             get_profile,
             create_profile,
+            update_profile,
             delete_profile,
             start_session,
             stop_session,

@@ -142,6 +142,81 @@ pub async fn run_remove(name: String) -> Result<()> {
     Ok(())
 }
 
+pub async fn run_edit(
+    name: String,
+    new_name: Option<String>,
+    host: Option<String>,
+    user: Option<String>,
+    port: Option<u16>,
+    tunnels: Vec<String>,
+    key_file: Option<String>,
+    password: bool,
+    agent: bool,
+) -> Result<()> {
+    let profiles = load_profiles()?;
+
+    let existing = profiles
+        .iter()
+        .find(|p| p.name == name)
+        .context(format!("Profile '{}' not found.", name))?
+        .clone();
+
+    let mut updated = existing.clone();
+
+    if let Some(new_name) = new_name {
+        updated.name = new_name;
+    }
+    if let Some(host) = host {
+        updated.host = host;
+    }
+    if let Some(user) = user {
+        updated.user = user;
+    }
+    if let Some(port) = port {
+        updated.port = port;
+    }
+
+    if !tunnels.is_empty() {
+        let parsed_tunnels = tunnels
+            .iter()
+            .map(|t| parse_tunnel_spec(t))
+            .collect::<Result<Vec<_>>>()?;
+        if parsed_tunnels.is_empty() {
+            anyhow::bail!("At least one tunnel specification is required when using --tunnel");
+        }
+        updated.tunnels = parsed_tunnels;
+    }
+
+    // Auth selection precedence:
+    // 1) --password
+    // 2) --key
+    // 3) --agent
+    // 4) keep existing
+    if password {
+        updated.auth = AuthMethod::Password;
+    } else if let Some(key) = key_file {
+        updated.auth = AuthMethod::KeyFile { path: key };
+    } else if agent {
+        updated.auth = AuthMethod::Agent;
+    }
+
+    // Renames must not collide with existing profiles.
+    if updated.name != name && profiles.iter().any(|p| p.name == updated.name) {
+        anyhow::bail!("Profile '{}' already exists.", updated.name);
+    }
+
+    // Save updated profile first; if renamed, delete the old file.
+    save_profile(&updated)?;
+    if updated.name != name {
+        delete_profile(&existing)?;
+    }
+
+    println!("Profile '{}' updated successfully.", updated.name);
+    println!("Configuration saved to: {}", paths::profiles_dir().display());
+
+    Ok(())
+}
+
 fn parse_tunnel_spec(spec: &str) -> Result<TunnelSpec> {
     // Format: remote_port:local_host:local_port
     // Or: remote_port:local_port (defaults local_host to localhost)

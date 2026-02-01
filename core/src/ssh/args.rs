@@ -33,24 +33,28 @@ impl SshArgs {
             .option("ServerAliveCountMax", &profile.keepalive_count.to_string());
 
         // Add safety options
-        builder = builder
-            .option("ExitOnForwardFailure", "yes")
-            .option("BatchMode", "yes"); // Disable password prompts in non-interactive mode
+        builder = builder.option("ExitOnForwardFailure", "yes");
 
-        // Add authentication options
+        // Add authentication-related options
         match &profile.auth {
             AuthMethod::Agent => {
-                // Use SSH agent (default behavior)
-                builder = builder.option("IdentitiesOnly", "yes");
+                // Non-interactive: don't prompt for passwords
+                builder = builder
+                    .option("BatchMode", "yes")
+                    .option("IdentitiesOnly", "yes");
             }
             AuthMethod::KeyFile { path } => {
                 builder = builder
+                    .option("BatchMode", "yes")
                     .identity_file(path)
                     .option("IdentitiesOnly", "yes");
             }
             AuthMethod::Password => {
-                // Password auth - BatchMode will be disabled
-                builder.args.retain(|a| !a.contains("BatchMode"));
+                // Allow password auth (used with sshpass in non-interactive mode)
+                builder = builder
+                    .option("BatchMode", "no")
+                    .option("NumberOfPasswordPrompts", "1")
+                    .option("PreferredAuthentications", "password,keyboard-interactive");
             }
         }
 

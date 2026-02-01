@@ -149,6 +149,34 @@ pub fn delete_profile(profile: &Profile) -> Result<()> {
     Ok(())
 }
 
+/// Update an existing profile by its current name.
+///
+/// - If `updated.name` differs from `existing_name`, this performs a rename:
+///   it saves the new profile and deletes the old profile file.
+/// - If a different profile already exists with the new name, returns `ProfileAlreadyExists`.
+pub fn update_profile(existing_name: &str, updated: &Profile) -> Result<()> {
+    let profiles = load_profiles()?;
+
+    let existing = profiles
+        .iter()
+        .find(|p| p.name == existing_name)
+        .ok_or_else(|| CoreError::ProfileNotFound(existing_name.to_string()))?;
+
+    if updated.name != existing_name && profiles.iter().any(|p| p.name == updated.name) {
+        return Err(CoreError::ProfileAlreadyExists(updated.name.clone()));
+    }
+
+    // Save new/updated profile
+    save_profile(updated)?;
+
+    // If renamed, delete the old profile file.
+    if updated.name != existing_name {
+        delete_profile(existing)?;
+    }
+
+    Ok(())
+}
+
 /// Sanitize a string for use as a filename
 fn sanitize_filename(name: &str) -> String {
     name.chars()

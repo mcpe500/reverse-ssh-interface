@@ -21,6 +21,7 @@ use types::*;
         profiles::create_profile,
         profiles::get_profile,
         profiles::delete_profile,
+        profiles::update_profile,
         sessions::list_sessions,
         sessions::start_session,
         sessions::stop_session,
@@ -33,6 +34,7 @@ use types::*;
             ApiSession,
             ApiSessionStatus,
             CreateProfileRequest,
+            UpdateProfileRequest,
         )
     ),
     tags(
@@ -46,7 +48,12 @@ pub fn create_routes(state: AppState) -> Router {
         .route("/", get(static_files::index))
         .route("/health", get(health::check))
         .route("/api/profiles", get(profiles::list_profiles).post(profiles::create_profile))
-        .route("/api/profiles/{name}", get(profiles::get_profile).delete(profiles::delete_profile))
+        .route(
+            "/api/profiles/{name}",
+            get(profiles::get_profile)
+                .delete(profiles::delete_profile)
+                .put(profiles::update_profile),
+        )
         .route("/api/sessions", get(sessions::list_sessions))
         .route("/api/sessions/{name}/start", post(sessions::start_session))
         .route("/api/sessions/{id}/stop", post(sessions::stop_session))

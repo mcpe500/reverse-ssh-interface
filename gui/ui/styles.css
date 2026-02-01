@@ -855,6 +855,10 @@ input::placeholder {
     width: auto;
 }
 
+.tunnel-remote-bind {
+    width: 120px !important;
+}
+
 .tunnel-remote {
     width: 100px !important;
 }

@@ -389,14 +389,91 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                         <input type="number" id="profilePort" value="22" placeholder="22">
                     </div>
                     <div class="form-group">
-                        <label for="profileTunnel">Tunnel Specification</label>
-                        <input type="text" id="profileTunnel" required placeholder="8080:localhost:3000">
-                        <small>Format: remote_port:local_host:local_port</small>
+                        <label for="profileAuth">Authentication</label>
+                        <select id="profileAuth" onchange="toggleKeyPath('profileAuth', 'profileKeyPathGroup')">
+                            <option value="agent">SSH Agent (Recommended)</option>
+                            <option value="key_file">Key File</option>
+                            <option value="password">Password (via sshpass + SSHPASS env var)</option>
+                        </select>
+                        <small>Password is not stored. Set SSHPASS in the web server environment.</small>
+                    </div>
+                    <div class="form-group" id="profileKeyPathGroup" style="display:none;">
+                        <label for="profileKeyPath">Key File Path</label>
+                        <input type="text" id="profileKeyPath" placeholder="/home/user/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group">
+                        <label>Tunnels</label>
+                        <div id="tunnelsEditor">
+                            <div class="tunnel-row" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                                <input type="text" class="tunnel-remote-bind" placeholder="localhost" value="localhost" style="width:110px;">
+                                <input type="number" class="tunnel-remote-port" placeholder="Remote" min="1" max="65535" style="width:110px;">
+                                <span>→</span>
+                                <input type="text" class="tunnel-local-host" placeholder="localhost" value="localhost" style="flex:1; min-width:120px;">
+                                <span>:</span>
+                                <input type="number" class="tunnel-local-port" placeholder="Local" min="1" max="65535" style="width:110px;">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeTunnelRow(this, 'tunnelsEditor')">×</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm" onclick="addTunnelRow('tunnelsEditor')">+ Add Tunnel</button>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-success">Create Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editProfileForm" onsubmit="handleEditProfile(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="editExistingName" />
+
+                    <div class="form-group">
+                        <label for="editProfileName">Profile Name</label>
+                        <input type="text" id="editProfileName" required placeholder="my-server">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProfileHost">SSH Host</label>
+                        <input type="text" id="editProfileHost" required placeholder="example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProfileUser">SSH User</label>
+                        <input type="text" id="editProfileUser" required placeholder="admin">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProfilePort">SSH Port</label>
+                        <input type="number" id="editProfilePort" value="22" placeholder="22">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProfileAuth">Authentication</label>
+                        <select id="editProfileAuth" onchange="toggleKeyPath('editProfileAuth', 'editKeyPathGroup')">
+                            <option value="agent">SSH Agent (Recommended)</option>
+                            <option value="key_file">Key File</option>
+                            <option value="password">Password (via sshpass + SSHPASS env var)</option>
+                        </select>
+                        <small>Password is not stored. Set SSHPASS in the web server environment.</small>
+                    </div>
+                    <div class="form-group" id="editKeyPathGroup" style="display:none;">
+                        <label for="editProfileKeyPath">Key File Path</label>
+                        <input type="text" id="editProfileKeyPath" placeholder="/home/user/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group">
+                        <label>Tunnels</label>
+                        <div id="editTunnelsEditor"></div>
+                        <button type="button" class="btn btn-sm" onclick="addTunnelRow('editTunnelsEditor')">+ Add Tunnel</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -489,11 +566,82 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                         <p>${profile.tunnels.length} tunnel(s)</p>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-success btn-sm" onclick="startSession('${escapeHtml(profile.name)}')">Start</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteProfile('${escapeHtml(profile.name)}')">Delete</button>
+                        <button class="btn btn-sm" onclick='showEditProfileModal(${JSON.stringify(profile.name)})'>Edit</button>
+                        <button class="btn btn-success btn-sm" onclick='startSession(${JSON.stringify(profile.name)})'>Start</button>
+                        <button class="btn btn-danger btn-sm" onclick='deleteProfile(${JSON.stringify(profile.name)})'>Delete</button>
                     </div>
                 </li>
             `).join('');
+        }
+
+        function toggleKeyPath(selectId, groupId) {
+            const value = document.getElementById(selectId).value;
+            const group = document.getElementById(groupId);
+            group.style.display = value === 'key_file' ? 'block' : 'none';
+        }
+
+        function addTunnelRow(editorId, preset) {
+            const editor = document.getElementById(editorId);
+            const row = document.createElement('div');
+            row.className = 'tunnel-row';
+            row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:8px;';
+
+            const remoteBind = preset?.remote_bind ?? 'localhost';
+            const remotePort = preset?.remote_port ?? '';
+            const localHost = preset?.local_host ?? 'localhost';
+            const localPort = preset?.local_port ?? '';
+
+            row.innerHTML = `
+                <input type="text" class="tunnel-remote-bind" placeholder="localhost" value="${escapeAttribute(String(remoteBind))}" style="width:110px;">
+                <input type="number" class="tunnel-remote-port" placeholder="Remote" min="1" max="65535" value="${escapeAttribute(String(remotePort))}" style="width:110px;">
+                <span>→</span>
+                <input type="text" class="tunnel-local-host" placeholder="localhost" value="${escapeAttribute(String(localHost))}" style="flex:1; min-width:120px;">
+                <span>:</span>
+                <input type="number" class="tunnel-local-port" placeholder="Local" min="1" max="65535" value="${escapeAttribute(String(localPort))}" style="width:110px;">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTunnelRow(this, '${editorId}')">×</button>
+            `;
+            editor.appendChild(row);
+        }
+
+        function resetTunnelsEditor(editorId) {
+            const editor = document.getElementById(editorId);
+            editor.innerHTML = '';
+            addTunnelRow(editorId);
+        }
+
+        function removeTunnelRow(btn, editorId) {
+            const editor = document.getElementById(editorId);
+            if (editor.children.length > 1) {
+                btn.parentElement.remove();
+            }
+        }
+
+        function readTunnels(editorId) {
+            const rows = document.querySelectorAll(`#${editorId} .tunnel-row`);
+            const tunnels = [];
+            for (const row of rows) {
+                const remoteBind = row.querySelector('.tunnel-remote-bind').value || 'localhost';
+                const remotePort = row.querySelector('.tunnel-remote-port').value;
+                const localHost = row.querySelector('.tunnel-local-host').value || 'localhost';
+                const localPort = row.querySelector('.tunnel-local-port').value;
+                if (remotePort && localPort) {
+                    tunnels.push({
+                        remote_bind: remoteBind,
+                        remote_port: parseInt(remotePort),
+                        local_host: localHost,
+                        local_port: parseInt(localPort),
+                    });
+                }
+            }
+            return tunnels;
+        }
+
+        function buildAuth(selectId, keyPathId) {
+            const authType = document.getElementById(selectId).value;
+            if (authType === 'agent') return { type: 'agent' };
+            if (authType === 'password') return { type: 'password' };
+            const keyPath = document.getElementById(keyPathId).value;
+            return { type: 'key_file', path: keyPath };
         }
 
         // Render sessions list
@@ -591,35 +739,25 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
         // Add profile
         async function handleAddProfile(event) {
             event.preventDefault();
-            
-            const tunnelParts = document.getElementById('profileTunnel').value.split(':');
-            let tunnel;
-            
-            if (tunnelParts.length === 2) {
-                tunnel = {
-                    remote_bind: 'localhost',
-                    remote_port: parseInt(tunnelParts[0]),
-                    local_host: 'localhost',
-                    local_port: parseInt(tunnelParts[1])
-                };
-            } else if (tunnelParts.length === 3) {
-                tunnel = {
-                    remote_bind: 'localhost',
-                    remote_port: parseInt(tunnelParts[0]),
-                    local_host: tunnelParts[1],
-                    local_port: parseInt(tunnelParts[2])
-                };
-            } else {
-                showToast('Invalid tunnel format', 'error');
+            const tunnels = readTunnels('tunnelsEditor');
+            if (tunnels.length === 0) {
+                showToast('Please add at least one valid tunnel', 'error');
                 return;
             }
-            
+
+            const addAuthType = document.getElementById('profileAuth').value;
+            if (addAuthType === 'key_file' && !document.getElementById('profileKeyPath').value.trim()) {
+                showToast('Key file path is required for key_file auth', 'error');
+                return;
+            }
+
             const profile = {
                 name: document.getElementById('profileName').value,
                 host: document.getElementById('profileHost').value,
                 user: document.getElementById('profileUser').value,
                 port: parseInt(document.getElementById('profilePort').value) || 22,
-                tunnels: [tunnel]
+                auth: buildAuth('profileAuth', 'profileKeyPath'),
+                tunnels,
             };
             
             try {
@@ -634,6 +772,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     closeModal();
                     loadProfiles();
                     document.getElementById('addProfileForm').reset();
+                    document.getElementById('profileKeyPathGroup').style.display = 'none';
                 } else {
                     const result = await response.json();
                     showToast(result.error || 'Failed to create profile', 'error');
@@ -643,8 +782,100 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             }
         }
 
+        async function showEditProfileModal(profileName) {
+            try {
+                const response = await fetch(`${API_BASE}/api/profiles/${encodeURIComponent(profileName)}`);
+                const profile = await response.json();
+                if (!response.ok) {
+                    showToast(profile.error || 'Failed to load profile', 'error');
+                    return;
+                }
+
+                document.getElementById('editExistingName').value = profileName;
+                document.getElementById('editProfileName').value = profile.name;
+                document.getElementById('editProfileHost').value = profile.host;
+                document.getElementById('editProfileUser').value = profile.user;
+                document.getElementById('editProfilePort').value = profile.port;
+
+                // auth
+                const authType = profile.auth?.type || 'agent';
+                document.getElementById('editProfileAuth').value = authType;
+                if (authType === 'key_file') {
+                    document.getElementById('editProfileKeyPath').value = profile.auth.path || '';
+                    document.getElementById('editKeyPathGroup').style.display = 'block';
+                } else {
+                    document.getElementById('editProfileKeyPath').value = '';
+                    document.getElementById('editKeyPathGroup').style.display = 'none';
+                }
+
+                // tunnels
+                const editor = document.getElementById('editTunnelsEditor');
+                editor.innerHTML = '';
+                for (const t of profile.tunnels || []) {
+                    addTunnelRow('editTunnelsEditor', t);
+                }
+                if (editor.children.length === 0) {
+                    addTunnelRow('editTunnelsEditor');
+                }
+
+                document.getElementById('editProfileModal').classList.add('active');
+            } catch (error) {
+                showToast('Failed to load profile', 'error');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editProfileModal').classList.remove('active');
+        }
+
+        async function handleEditProfile(event) {
+            event.preventDefault();
+            const existingName = document.getElementById('editExistingName').value;
+
+            const tunnels = readTunnels('editTunnelsEditor');
+            if (tunnels.length === 0) {
+                showToast('Please add at least one valid tunnel', 'error');
+                return;
+            }
+
+            const editAuthType = document.getElementById('editProfileAuth').value;
+            if (editAuthType === 'key_file' && !document.getElementById('editProfileKeyPath').value.trim()) {
+                showToast('Key file path is required for key_file auth', 'error');
+                return;
+            }
+
+            const payload = {
+                name: document.getElementById('editProfileName').value,
+                host: document.getElementById('editProfileHost').value,
+                user: document.getElementById('editProfileUser').value,
+                port: parseInt(document.getElementById('editProfilePort').value) || 22,
+                auth: buildAuth('editProfileAuth', 'editProfileKeyPath'),
+                tunnels,
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/profiles/${encodeURIComponent(existingName)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Profile updated successfully', 'success');
+                    closeEditModal();
+                    loadProfiles();
+                } else {
+                    showToast(result.error || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to update profile', 'error');
+            }
+        }
+
         // Modal functions
         function showAddProfileModal() {
+            resetTunnelsEditor('tunnelsEditor');
             document.getElementById('addProfileModal').classList.add('active');
         }
 
@@ -670,10 +901,21 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             return div.innerHTML;
         }
 
+        // Escape for HTML attributes (e.g. value="...")
+        function escapeAttribute(text) {
+            return String(text)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
         // Close modal on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeModal();
+                closeEditModal();
             }
         });
 
@@ -681,6 +923,12 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
         document.getElementById('addProfileModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
                 closeModal();
+            }
+        });
+
+        document.getElementById('editProfileModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeEditModal();
             }
         });
     </script>

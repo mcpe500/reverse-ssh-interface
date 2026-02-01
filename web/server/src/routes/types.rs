@@ -79,6 +79,23 @@ pub struct CreateProfileRequest {
     pub tunnels: Vec<ApiTunnelSpec>,
 }
 
+/// Request to update an existing profile
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct UpdateProfileRequest {
+    /// New profile name (optional). If set, renames the profile.
+    pub name: Option<String>,
+    /// SSH host
+    pub host: Option<String>,
+    /// SSH port
+    pub port: Option<u16>,
+    /// SSH user
+    pub user: Option<String>,
+    /// Authentication method
+    pub auth: Option<ApiAuthMethod>,
+    /// Tunnel specifications (replaces existing when provided)
+    pub tunnels: Option<Vec<ApiTunnelSpec>>,
+}
+
 /// API representation of session status
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]

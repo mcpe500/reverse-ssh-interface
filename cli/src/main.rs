@@ -98,6 +98,48 @@ enum ProfileAction {
         #[arg(short, long)]
         key: Option<String>,
     },
+    /// Edit an existing profile
+    Edit {
+        /// Existing profile name
+        name: String,
+
+        /// Rename the profile
+        #[arg(long)]
+        new_name: Option<String>,
+
+        /// Remote host
+        #[arg(short = 'H', long)]
+        host: Option<String>,
+
+        /// Remote user
+        #[arg(short, long)]
+        user: Option<String>,
+
+        /// Remote port
+        #[arg(short, long)]
+        port: Option<u16>,
+
+        /// Replace tunnels with these specs (repeatable)
+        ///
+        /// Format:
+        /// - remote_port:local_port
+        /// - remote_port:local_host:local_port
+        /// - remote_bind:remote_port:local_host:local_port
+        #[arg(short, long)]
+        tunnel: Vec<String>,
+
+        /// Use a specific key file for auth
+        #[arg(short, long)]
+        key: Option<String>,
+
+        /// Use password auth (requires sshpass + SSHPASS env var)
+        #[arg(long)]
+        password: bool,
+
+        /// Force SSH agent auth
+        #[arg(long)]
+        agent: bool,
+    },
     /// Remove a profile
     Remove {
         /// Profile name
@@ -132,6 +174,9 @@ async fn main() -> Result<()> {
                 }
                 ProfileAction::Add { name, host, user, port, tunnel, key } => {
                     cmd::profile::run_add(name, host, user, port, tunnel, key).await?;
+                }
+                ProfileAction::Edit { name, new_name, host, user, port, tunnel, key, password, agent } => {
+                    cmd::profile::run_edit(name, new_name, host, user, port, tunnel, key, password, agent).await?;
                 }
                 ProfileAction::Remove { name } => {
                     cmd::profile::run_remove(name).await?;

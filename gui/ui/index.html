@@ -370,6 +370,7 @@
                         <label>Tunnels</label>
                         <div class="tunnels-editor" id="tunnelsEditor">
                             <div class="tunnel-row">
+                                <input type="text" class="tunnel-remote-bind" placeholder="Remote Bind" value="localhost">
                                 <input type="number" class="tunnel-remote" placeholder="Remote Port" min="1" max="65535">
                                 <span class="tunnel-arrow">→</span>
                                 <input type="text" class="tunnel-local-host" placeholder="localhost">
@@ -390,6 +391,68 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('createProfileModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal" id="editProfileModal">
+        <div class="modal-backdrop" onclick="closeModal('editProfileModal')"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Profile</h2>
+                <button class="modal-close" onclick="closeModal('editProfileModal')">&times;</button>
+            </div>
+            <form id="editProfileForm" onsubmit="updateProfile(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="editExistingName">
+
+                    <div class="form-group">
+                        <label for="editProfileName">Profile Name *</label>
+                        <input type="text" id="editProfileName" required placeholder="my-server">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editProfileHost">Host *</label>
+                            <input type="text" id="editProfileHost" required placeholder="example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProfilePort">Port</label>
+                            <input type="number" id="editProfilePort" placeholder="22" min="1" max="65535">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProfileUser">Username *</label>
+                        <input type="text" id="editProfileUser" required placeholder="root">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProfileAuth">Authentication</label>
+                        <select id="editProfileAuth" onchange="toggleEditKeyPath()">
+                            <option value="agent">SSH Agent (Recommended)</option>
+                            <option value="key">Key File</option>
+                            <option value="password">Password</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="editKeyPathGroup" style="display: none;">
+                        <label for="editProfileKeyPath">Key File Path</label>
+                        <input type="text" id="editProfileKeyPath" placeholder="~/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group">
+                        <label>Tunnels</label>
+                        <div class="tunnels-editor" id="editTunnelsEditor"></div>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="addEditTunnelRow()">+ Add Tunnel</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="editProfileAutoReconnect">
+                            Auto-reconnect on failure
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('editProfileModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -428,6 +491,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger" onclick="deleteCurrentProfile()">Delete</button>
+                <button type="button" class="btn btn-secondary" onclick="editCurrentProfile()">Edit</button>
                 <button type="button" class="btn btn-ghost" onclick="closeModal('profileDetailModal')">Close</button>
                 <button type="button" class="btn btn-primary" onclick="connectCurrentProfile()">Connect</button>
             </div>

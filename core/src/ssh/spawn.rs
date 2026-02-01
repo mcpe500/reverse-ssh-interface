@@ -1,3 +1,4 @@
+use std::path::{PathBuf};
 use std::process::Stdio;
 
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -5,7 +6,7 @@ use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
 
 use crate::error::{CoreError, Result};
-use crate::types::Profile;
+use crate::types::{AuthMethod, Profile};
 
 use super::args::{validate_args, SshArgs};
 use super::detect::SshInfo;
@@ -53,7 +54,116 @@ impl SshProcess {
 /// Spawn an SSH process for the given profile
 pub async fn spawn_ssh(ssh_info: &SshInfo, profile: &Profile) -> Result<SshProcess> {
     let args = SshArgs::from_profile(profile).build_tunnel_mode();
-    spawn_ssh_with_args(ssh_info, args).await
+    match profile.auth {
+        AuthMethod::Password => spawn_ssh_with_password(ssh_info, args).await,
+        _ => spawn_ssh_with_args(ssh_info, args).await,
+    }
+}
+
+fn find_in_path(exe_base_name: &str) -> Option<PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    let separator = if cfg!(windows) { ';' } else { ':' };
+
+    let candidates: Vec<String> = if cfg!(windows) {
+        vec![
+            format!("{}.exe", exe_base_name),
+            format!("{}.cmd", exe_base_name),
+            format!("{}.bat", exe_base_name),
+            exe_base_name.to_string(),
+        ]
+    } else {
+        vec![exe_base_name.to_string()]
+    };
+
+    for dir in std::env::split_paths(&path_var) {
+        // split_paths handles platform separators, but keep `separator` above as a fallback guard.
+        let _ = separator;
+        for candidate in &candidates {
+            let full = dir.join(candidate);
+            if full.is_file() {
+                return Some(full);
+            }
+        }
+    }
+    None
+}
+
+async fn spawn_ssh_with_password(ssh_info: &SshInfo, args: Vec<String>) -> Result<SshProcess> {
+    // Validate SSH args before spawning
+    validate_args(&args).map_err(|e| CoreError::SshSpawnFailed(e))?;
+
+    // sshpass reads the password from SSHPASS when using -e
+    if std::env::var("SSHPASS").is_err() {
+        return Err(CoreError::SshSpawnFailed(
+            "Password auth requires SSHPASS env var to be set (password is not stored).".to_string(),
+        ));
+    }
+
+    let sshpass = find_in_path("sshpass").ok_or_else(|| {
+        CoreError::SshSpawnFailed(
+            "Password auth requires 'sshpass' to be installed and available in PATH.".to_string(),
+        )
+    })?;
+
+    tracing::debug!(
+        "Spawning SSH with password via sshpass. sshpass={:?} ssh={:?} args={:?}",
+        sshpass,
+        ssh_info.path,
+        args
+    );
+
+    let mut child = Command::new(sshpass)
+        .arg("-e")
+        .arg(&ssh_info.path)
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()
+        .map_err(|e| CoreError::SshSpawnFailed(e.to_string()))?;
+
+    let pid = child.id().ok_or_else(|| {
+        CoreError::SshSpawnFailed("Failed to get process ID".to_string())
+    })?;
+
+    let (tx, rx) = mpsc::channel(100);
+
+    let stdout = child.stdout.take();
+    let tx_stdout = tx.clone();
+    if let Some(stdout) = stdout {
+        tokio::spawn(async move {
+            let reader = BufReader::new(stdout);
+            let mut lines = reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                if tx_stdout.send(SshOutput::Stdout(line)).await.is_err() {
+                    break;
+                }
+            }
+        });
+    }
+
+    let stderr = child.stderr.take();
+    let tx_stderr = tx.clone();
+    if let Some(stderr) = stderr {
+        tokio::spawn(async move {
+            let reader = BufReader::new(stderr);
+            let mut lines = reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                if tx_stderr.send(SshOutput::Stderr(line)).await.is_err() {
+                    break;
+                }
+            }
+        });
+    }
+
+    tracing::info!("Spawned SSH process (password) with PID {}", pid);
+
+    Ok(SshProcess {
+        child,
+        pid,
+        output_rx: rx,
+    })
 }
 
 /// Spawn an SSH process with custom arguments

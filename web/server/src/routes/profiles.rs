@@ -12,7 +12,7 @@ use serde_json::json;
 use uuid::Uuid;
 use std::collections::HashMap;
 
-use super::types::{ApiProfile, CreateProfileRequest};
+use super::types::{ApiProfile, CreateProfileRequest, UpdateProfileRequest};
 
 #[utoipa::path(
     get,
@@ -166,4 +166,100 @@ pub async fn delete_profile(Path(name): Path<String>) -> impl IntoResponse {
             Json(json!({ "error": e.to_string() })),
         ).into_response(),
     }
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/profiles/{name}",
+    params(
+        ("name" = String, Path, description = "Existing profile name")
+    ),
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated successfully", body = ApiProfile),
+        (status = 400, description = "Invalid request"),
+        (status = 404, description = "Profile not found"),
+        (status = 409, description = "Profile name already exists"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "profiles"
+)]
+pub async fn update_profile(
+    Path(name): Path<String>,
+    Json(req): Json<UpdateProfileRequest>,
+) -> impl IntoResponse {
+    let mut profiles = match load_profiles() {
+        Ok(p) => p,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": e.to_string() })),
+            )
+                .into_response();
+        }
+    };
+
+    let existing = match profiles.iter().find(|p| p.name == name) {
+        Some(p) => p.clone(),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "Profile not found" })),
+            )
+                .into_response();
+        }
+    };
+
+    let mut updated = existing.clone();
+
+    if let Some(new_name) = req.name {
+        updated.name = new_name;
+    }
+    if let Some(host) = req.host {
+        updated.host = host;
+    }
+    if let Some(port) = req.port {
+        updated.port = port;
+    }
+    if let Some(user) = req.user {
+        updated.user = user;
+    }
+    if let Some(auth) = req.auth {
+        updated.auth = auth.into();
+    }
+    if let Some(tunnels) = req.tunnels {
+        if tunnels.is_empty() {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "At least one tunnel is required" })),
+            )
+                .into_response();
+        }
+        updated.tunnels = tunnels.into_iter().map(Into::into).collect();
+    }
+
+    // Rename collision check
+    if updated.name != name && profiles.iter().any(|p| p.name == updated.name) {
+        return (
+            StatusCode::CONFLICT,
+            Json(json!({ "error": format!("Profile '{}' already exists", updated.name) })),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = save_profile(&updated) {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("Failed to save profile: {}", e) })),
+        )
+            .into_response();
+    }
+
+    // If renamed, delete old file
+    if updated.name != name {
+        let _ = core_delete_profile(&existing);
+    }
+
+    let api_profile: ApiProfile = updated.into();
+    (StatusCode::OK, Json(api_profile)).into_response()
 }
