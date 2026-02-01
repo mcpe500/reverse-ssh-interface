@@ -69,9 +69,14 @@ pub async fn start_session(
             if trimmed.is_empty() { None } else { Some(trimmed) }
         });
 
+        let sshpass_path = req.sshpass_path.and_then(|p| {
+            let trimmed = p.trim().to_string();
+            if trimmed.is_empty() { None } else { Some(trimmed) }
+        });
+
         match state
             .handle
-            .start_with_options(profile, StartSessionOptions { password })
+            .start_with_options(profile, StartSessionOptions { password, sshpass_path })
             .await
         {
             Ok(session_id) => (

@@ -59,10 +59,11 @@ pub async fn spawn_ssh(
     ssh_info: &SshInfo,
     profile: &Profile,
     password: Option<&str>,
+    sshpass_path: Option<&str>,
 ) -> Result<SshProcess> {
     let args = SshArgs::from_profile(profile).build_tunnel_mode();
     match profile.auth {
-        AuthMethod::Password => spawn_ssh_with_password(ssh_info, args, password).await,
+        AuthMethod::Password => spawn_ssh_with_password(ssh_info, args, password, sshpass_path).await,
         _ => spawn_ssh_with_args(ssh_info, args).await,
     }
 }
@@ -99,6 +100,7 @@ async fn spawn_ssh_with_password(
     ssh_info: &SshInfo,
     args: Vec<String>,
     password: Option<&str>,
+    sshpass_path: Option<&str>,
 ) -> Result<SshProcess> {
     // Validate SSH args before spawning
     validate_args(&args).map_err(|e| CoreError::SshSpawnFailed(e))?;
@@ -113,11 +115,21 @@ async fn spawn_ssh_with_password(
         ));
     }
 
-    let sshpass = find_in_path("sshpass").ok_or_else(|| {
-        CoreError::SshSpawnFailed(
-            "Password auth requires 'sshpass' to be installed and available in PATH.".to_string(),
-        )
-    })?;
+    let sshpass = if let Some(p) = sshpass_path {
+        let p = PathBuf::from(p);
+        if !p.is_file() {
+            return Err(CoreError::SshSpawnFailed(
+                "Password auth requires a valid sshpass_path (file not found).".to_string(),
+            ));
+        }
+        p
+    } else {
+        find_in_path("sshpass").ok_or_else(|| {
+            CoreError::SshSpawnFailed(
+                "Password auth requires 'sshpass' to be installed and available in PATH, or provide sshpass_path.".to_string(),
+            )
+        })?
+    };
 
     tracing::debug!(
         "Spawning SSH with password via sshpass. sshpass={:?} ssh={:?} args={:?}",

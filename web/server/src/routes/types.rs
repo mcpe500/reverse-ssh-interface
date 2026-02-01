@@ -106,6 +106,9 @@ pub struct StartSessionRequest {
     ///
     /// This is not stored in profile configuration.
     pub password: Option<String>,
+
+    /// Optional path to `sshpass` executable on the server host.
+    pub sshpass_path: Option<String>,
 }
 
 /// API representation of session status

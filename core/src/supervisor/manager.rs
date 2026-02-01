@@ -40,6 +40,11 @@ pub struct StartSessionOptions {
     /// This value is kept in memory for the lifetime of the session and is never
     /// written into the profile configuration.
     pub password: Option<String>,
+
+    /// Optional path to `sshpass` executable.
+    ///
+    /// Useful when bundling `sshpass` alongside the GUI/web distribution.
+    pub sshpass_path: Option<String>,
 }
 
 /// Response from the session manager
@@ -368,7 +373,14 @@ async fn run_session_task(
 
     loop {
         // Spawn SSH process
-        let process = match spawn_ssh(&ssh_info, &profile, options.password.as_deref()).await {
+        let process = match spawn_ssh(
+            &ssh_info,
+            &profile,
+            options.password.as_deref(),
+            options.sshpass_path.as_deref(),
+        )
+        .await
+        {
             Ok(p) => p,
             Err(e) => {
                 tracing::error!("Failed to spawn SSH for '{}': {}", profile.name, e);

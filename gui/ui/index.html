@@ -371,6 +371,11 @@
                         <input type="password" id="profilePassword" placeholder="Password">
                         <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not written to profile files.</p>
                     </div>
+                    <div class="form-group" id="sshpassPathGroup" style="display: none;">
+                        <label for="profileSshpassPath">sshpass Path</label>
+                        <input type="text" id="profileSshpassPath" placeholder="/usr/bin/sshpass or C:\\tools\\sshpass.exe">
+                        <p class="text-muted" style="margin-top: 6px;">If sshpass isn't in PATH, set an explicit path.</p>
+                    </div>
                     <div class="form-group">
                         <label>Tunnels</label>
                         <div class="tunnels-editor" id="tunnelsEditor">
@@ -447,6 +452,11 @@
                         <label for="editProfilePassword">Password</label>
                         <input type="password" id="editProfilePassword" placeholder="Password">
                         <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not written to profile files.</p>
+                    </div>
+                    <div class="form-group" id="editSshpassPathGroup" style="display: none;">
+                        <label for="editProfileSshpassPath">sshpass Path</label>
+                        <input type="text" id="editProfileSshpassPath" placeholder="/usr/bin/sshpass or C:\\tools\\sshpass.exe">
+                        <p class="text-muted" style="margin-top: 6px;">If sshpass isn't in PATH, set an explicit path.</p>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>

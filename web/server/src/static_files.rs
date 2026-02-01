@@ -390,7 +390,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     </div>
                     <div class="form-group">
                         <label for="profileAuth">Authentication</label>
-                        <select id="profileAuth" onchange="toggleAuthFields('profileAuth', 'profileKeyPathGroup', 'profilePasswordGroup')">
+                        <select id="profileAuth" onchange="toggleAuthFields('profileAuth', 'profileKeyPathGroup', 'profilePasswordGroup', 'profileSshpassPathGroup')">
                             <option value="agent">SSH Agent (Recommended)</option>
                             <option value="key_file">Key File</option>
                             <option value="password">Password (via sshpass + SSHPASS env var)</option>
@@ -405,6 +405,11 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                         <label for="profilePassword">Password</label>
                         <input type="password" id="profilePassword" placeholder="Password">
                         <small>Stored in this browser's local storage. Not written to profile files.</small>
+                    </div>
+                    <div class="form-group" id="profileSshpassPathGroup" style="display:none;">
+                        <label for="profileSshpassPath">sshpass Path (server)</label>
+                        <input type="text" id="profileSshpassPath" placeholder="/usr/bin/sshpass or C:\\tools\\sshpass.exe">
+                        <small>If sshpass isn't in PATH, provide an explicit path on the server host.</small>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
@@ -459,7 +464,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     </div>
                     <div class="form-group">
                         <label for="editProfileAuth">Authentication</label>
-                        <select id="editProfileAuth" onchange="toggleAuthFields('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup')">
+                        <select id="editProfileAuth" onchange="toggleAuthFields('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup', 'editSshpassPathGroup')">
                             <option value="agent">SSH Agent (Recommended)</option>
                             <option value="key_file">Key File</option>
                             <option value="password">Password (via sshpass + SSHPASS env var)</option>
@@ -474,6 +479,11 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                         <label for="editProfilePassword">Password</label>
                         <input type="password" id="editProfilePassword" placeholder="Password">
                         <small>Stored in this browser's local storage. Not written to profile files.</small>
+                    </div>
+                    <div class="form-group" id="editSshpassPathGroup" style="display:none;">
+                        <label for="editProfileSshpassPath">sshpass Path (server)</label>
+                        <input type="text" id="editProfileSshpassPath" placeholder="/usr/bin/sshpass or C:\\tools\\sshpass.exe">
+                        <small>If sshpass isn't in PATH, provide an explicit path on the server host.</small>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
@@ -586,7 +596,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             `).join('');
         }
 
-        function toggleAuthFields(selectId, keyGroupId, passwordGroupId) {
+        function toggleAuthFields(selectId, keyGroupId, passwordGroupId, sshpassGroupId) {
             const value = document.getElementById(selectId).value;
 
             const keyGroup = document.getElementById(keyGroupId);
@@ -598,10 +608,19 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             if (passwordGroup) {
                 passwordGroup.style.display = value === 'password' ? 'block' : 'none';
             }
+
+            const sshpassGroup = document.getElementById(sshpassGroupId);
+            if (sshpassGroup) {
+                sshpassGroup.style.display = value === 'password' ? 'block' : 'none';
+            }
         }
 
         function passwordStorageKey(profileName) {
             return `rssh.password.${profileName}`;
+        }
+
+        function sshpassPathStorageKey(profileName) {
+            return `rssh.sshpass_path.${profileName}`;
         }
 
         function loadStoredPassword(profileName) {
@@ -615,6 +634,22 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
         function storePassword(profileName, password) {
             try {
                 localStorage.setItem(passwordStorageKey(profileName), password);
+            } catch {
+                // ignore
+            }
+        }
+
+        function loadStoredSshpassPath(profileName) {
+            try {
+                return localStorage.getItem(sshpassPathStorageKey(profileName)) || '';
+            } catch {
+                return '';
+            }
+        }
+
+        function storeSshpassPath(profileName, sshpassPath) {
+            try {
+                localStorage.setItem(sshpassPathStorageKey(profileName), sshpassPath);
             } catch {
                 // ignore
             }
@@ -742,6 +777,11 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     if (pw) {
                         body.password = pw;
                     }
+
+                    const sshpassPath = loadStoredSshpassPath(profileName);
+                    if (sshpassPath) {
+                        body.sshpass_path = sshpassPath;
+                    }
                 }
 
                 const response = await fetch(`${API_BASE}/api/sessions/${encodeURIComponent(profileName)}/start`, {
@@ -827,6 +867,11 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 if (pw) {
                     storePassword(document.getElementById('profileName').value, pw);
                 }
+
+                const sp = document.getElementById('profileSshpassPath').value || '';
+                if (sp) {
+                    storeSshpassPath(document.getElementById('profileName').value, sp);
+                }
             }
 
             const profile = {
@@ -879,9 +924,10 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 // auth
                 const authType = profile.auth?.type || 'agent';
                 document.getElementById('editProfileAuth').value = authType;
-                toggleAuthFields('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup');
+                toggleAuthFields('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup', 'editSshpassPathGroup');
                 document.getElementById('editProfileKeyPath').value = authType === 'key_file' ? (profile.auth.path || '') : '';
                 document.getElementById('editProfilePassword').value = authType === 'password' ? loadStoredPassword(profileName) : '';
+                document.getElementById('editProfileSshpassPath').value = authType === 'password' ? loadStoredSshpassPath(profileName) : '';
 
                 // tunnels
                 const editor = document.getElementById('editTunnelsEditor');
@@ -926,6 +972,11 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 if (pw) {
                     storePassword(newName, pw);
                 }
+
+                const sp = document.getElementById('editProfileSshpassPath').value || '';
+                if (sp) {
+                    storeSshpassPath(newName, sp);
+                }
             } else {
                 deleteStoredPassword(existingName);
             }
@@ -936,6 +987,12 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 if (oldPw) {
                     storePassword(newName, oldPw);
                     deleteStoredPassword(existingName);
+                }
+
+                const oldSp = loadStoredSshpassPath(existingName);
+                if (oldSp) {
+                    storeSshpassPath(newName, oldSp);
+                    try { localStorage.removeItem(sshpassPathStorageKey(existingName)); } catch {}
                 }
             }
 
@@ -974,7 +1031,8 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             document.getElementById('profileAuth').value = 'agent';
             document.getElementById('profileKeyPath').value = '';
             document.getElementById('profilePassword').value = '';
-            toggleAuthFields('profileAuth', 'profileKeyPathGroup', 'profilePasswordGroup');
+            document.getElementById('profileSshpassPath').value = '';
+            toggleAuthFields('profileAuth', 'profileKeyPathGroup', 'profilePasswordGroup', 'profileSshpassPathGroup');
             document.getElementById('addProfileModal').classList.add('active');
         }
 
