@@ -115,36 +115,65 @@ async fn spawn_ssh_with_password(
         ));
     }
 
-    let sshpass = if let Some(p) = sshpass_path {
+    // Try to find sshpass first (Linux/Unix standard)
+    let sshpass_found = if let Some(p) = sshpass_path {
         let p = PathBuf::from(p);
-        if !p.is_file() {
-            return Err(CoreError::SshSpawnFailed(
-                "Password auth requires a valid sshpass_path (file not found).".to_string(),
-            ));
+        if p.is_file() {
+            Some(p)
+        } else {
+            None
         }
-        p
     } else {
-        find_in_path("sshpass").ok_or_else(|| {
-            CoreError::SshSpawnFailed(
-                "Password auth requires 'sshpass' to be installed and available in PATH, or provide sshpass_path.".to_string(),
-            )
-        })?
+        find_in_path("sshpass")
     };
 
-    tracing::debug!(
-        "Spawning SSH with password via sshpass. sshpass={:?} ssh={:?} args={:?}",
-        sshpass,
-        ssh_info.path,
-        args
-    );
+    if let Some(sshpass) = sshpass_found {
+        // Use sshpass (Linux/Unix)
+        tracing::debug!(
+            "Spawning SSH with password via sshpass. sshpass={:?} ssh={:?} args={:?}",
+            sshpass,
+            ssh_info.path,
+            args
+        );
 
-    let mut cmd = Command::new(sshpass);
-    cmd.arg("-e").arg(&ssh_info.path).args(&args);
+        let mut cmd = Command::new(sshpass);
+        cmd.arg("-e").arg(&ssh_info.path).args(&args);
 
-    if let Some(pw) = password {
-        cmd.env("SSHPASS", pw);
+        if let Some(pw) = password {
+            cmd.env("SSHPASS", pw);
+        }
+
+        return spawn_ssh_process(cmd).await;
     }
 
+    // Try plink.exe on Windows (PuTTY's command-line SSH client)
+    #[cfg(windows)]
+    {
+        if let Some(plink) = find_in_path("plink") {
+            if let Some(pw) = password {
+                tracing::debug!(
+                    "Spawning SSH with password via plink. plink={:?} args={:?}",
+                    plink,
+                    args
+                );
+
+                // plink uses -pw for password
+                let mut cmd = Command::new(plink);
+                cmd.arg("-pw").arg(pw).args(&args);
+
+                return spawn_ssh_process(cmd).await;
+            }
+        }
+    }
+
+    // No password helper found
+    Err(CoreError::SshSpawnFailed(
+        "Password auth requires 'sshpass' (Linux/Mac) or 'plink.exe' (Windows) to be installed and available in PATH, or provide sshpass_path.".to_string(),
+    ))
+}
+
+/// Helper to spawn SSH process with common output handling
+async fn spawn_ssh_process(mut cmd: Command) -> Result<SshProcess> {
     let mut child = cmd
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

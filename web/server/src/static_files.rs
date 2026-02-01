@@ -407,9 +407,9 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                         <small>Stored in this browser's local storage. Not written to profile files.</small>
                     </div>
                     <div class="form-group" id="profileSshpassPathGroup" style="display:none;">
-                        <label for="profileSshpassPath">sshpass Path (server)</label>
-                        <input type="text" id="profileSshpassPath" placeholder="/usr/bin/sshpass or C:\\tools\\sshpass.exe">
-                        <small>If sshpass isn't in PATH, provide an explicit path on the server host.</small>
+                        <label for="profileSshpassPath">sshpass/plink Path (server)</label>
+                        <input type="text" id="profileSshpassPath" placeholder="/usr/bin/sshpass or C:\\Program Files\\PuTTY\\plink.exe">
+                        <small>Windows: Use PuTTY's plink.exe (accepts password directly). Linux/Mac: Use sshpass. Leave empty if already in PATH.</small>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
@@ -481,9 +481,9 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                         <small>Stored in this browser's local storage. Not written to profile files.</small>
                     </div>
                     <div class="form-group" id="editSshpassPathGroup" style="display:none;">
-                        <label for="editProfileSshpassPath">sshpass Path (server)</label>
-                        <input type="text" id="editProfileSshpassPath" placeholder="/usr/bin/sshpass or C:\\tools\\sshpass.exe">
-                        <small>If sshpass isn't in PATH, provide an explicit path on the server host.</small>
+                        <label for="editProfileSshpassPath">sshpass/plink Path (server)</label>
+                        <input type="text" id="editProfileSshpassPath" placeholder="/usr/bin/sshpass or C:\\Program Files\\PuTTY\\plink.exe">
+                        <small>Windows: Use PuTTY's plink.exe (accepts password directly). Linux/Mac: Use sshpass. Leave empty if already in PATH.</small>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>

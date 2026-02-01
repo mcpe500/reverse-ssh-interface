@@ -48,3 +48,4 @@ gui/src-tauri/target/
 
 export_to_txt.py
 project_export.txt
+.claude
