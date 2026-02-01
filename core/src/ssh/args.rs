@@ -54,7 +54,8 @@ impl SshArgs {
                 builder = builder
                     .option("BatchMode", "no")
                     .option("NumberOfPasswordPrompts", "1")
-                    .option("PreferredAuthentications", "password,keyboard-interactive");
+                    .option("PreferredAuthentications", "password,keyboard-interactive")
+                    .option("StrictHostKeyChecking", "accept-new");
             }
         }
 
