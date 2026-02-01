@@ -282,6 +282,7 @@ async fn delete_profile(name: String) -> Result<(), String> {
 async fn start_session(
     name: String,
     password: Option<String>,
+    sshpass_path: Option<String>,
     state: tauri::State<'_, Arc<AppState>>,
     app_handle: AppHandle,
 ) -> Result<SessionInfo, String> {
@@ -298,8 +299,13 @@ async fn start_session(
         if trimmed.is_empty() { None } else { Some(trimmed) }
     });
 
+    let sshpass_path = sshpass_path.and_then(|p| {
+        let trimmed = p.trim().to_string();
+        if trimmed.is_empty() { None } else { Some(trimmed) }
+    });
+
     let session_id = handle
-        .start_with_options(profile, StartSessionOptions { password })
+        .start_with_options(profile, StartSessionOptions { password, sshpass_path })
         .await
         .map_err(|e| e.to_string())?;
 

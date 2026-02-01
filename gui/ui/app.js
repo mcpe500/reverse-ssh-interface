@@ -312,6 +312,7 @@ function showCreateProfileModal() {
     document.getElementById('createProfileForm').reset();
     document.getElementById('keyPathGroup').style.display = 'none';
     document.getElementById('passwordGroup').style.display = 'none';
+    document.getElementById('sshpassPathGroup').style.display = 'none';
     
     // Reset tunnels to single row
     setTunnelsEditor('tunnelsEditor', [], 'removeTunnelRow');
@@ -347,12 +348,37 @@ function deleteStoredPassword(profileName) {
     }
 }
 
+function sshpassPathStorageKey(profileName) {
+    return `rssh.sshpass_path.${profileName}`;
+}
+
+function loadStoredSshpassPath(profileName) {
+    try {
+        return localStorage.getItem(sshpassPathStorageKey(profileName)) || '';
+    } catch {
+        return '';
+    }
+}
+
+function storeSshpassPath(profileName, sshpassPath) {
+    try {
+        localStorage.setItem(sshpassPathStorageKey(profileName), sshpassPath);
+    } catch {
+        // ignore
+    }
+}
+
 function toggleAuthFieldsFor(selectId, keyGroupId, passwordGroupId) {
     const auth = document.getElementById(selectId).value;
     const keyGroup = document.getElementById(keyGroupId);
     const passwordGroup = document.getElementById(passwordGroupId);
     if (keyGroup) keyGroup.style.display = auth === 'key' ? 'block' : 'none';
     if (passwordGroup) passwordGroup.style.display = auth === 'password' ? 'block' : 'none';
+
+    // Show sshpass path when password auth is selected
+    const sshpassGroupId = selectId === 'profileAuth' ? 'sshpassPathGroup' : 'editSshpassPathGroup';
+    const sshpassGroup = document.getElementById(sshpassGroupId);
+    if (sshpassGroup) sshpassGroup.style.display = auth === 'password' ? 'block' : 'none';
 }
 
 function toggleKeyPath() {
@@ -456,6 +482,7 @@ async function createProfile(event) {
     const authType = document.getElementById('profileAuth').value;
     const keyPath = document.getElementById('profileKeyPath').value.trim();
     const password = document.getElementById('profilePassword')?.value || '';
+    const sshpassPath = document.getElementById('profileSshpassPath')?.value || '';
     const autoReconnect = document.getElementById('profileAutoReconnect').checked;
 
     if (authType === 'key' && !keyPath) {
@@ -480,6 +507,10 @@ async function createProfile(event) {
 
     if (authType === 'password' && password) {
         storePassword(name, password);
+    }
+
+    if (authType === 'password' && sshpassPath) {
+        storeSshpassPath(name, sshpassPath);
     }
     
     try {
@@ -539,6 +570,7 @@ async function showEditProfileModal(name) {
         document.getElementById('editProfileKeyPath').value = keyPath;
         toggleEditKeyPath();
         document.getElementById('editProfilePassword').value = authType === 'password' ? loadStoredPassword(name) : '';
+        document.getElementById('editProfileSshpassPath').value = authType === 'password' ? loadStoredSshpassPath(name) : '';
 
         // tunnels
         setTunnelsEditor('editTunnelsEditor', profile.tunnels, 'removeEditTunnelRow');
@@ -560,6 +592,7 @@ async function updateProfile(event) {
     const authType = document.getElementById('editProfileAuth').value;
     const keyPath = document.getElementById('editProfileKeyPath').value.trim();
     const password = document.getElementById('editProfilePassword')?.value || '';
+    const sshpassPath = document.getElementById('editProfileSshpassPath')?.value || '';
     const autoReconnect = document.getElementById('editProfileAutoReconnect').checked;
 
     if (authType === 'key' && !keyPath) {
@@ -586,12 +619,22 @@ async function updateProfile(event) {
             storePassword(name, oldPw);
             deleteStoredPassword(existingName);
         }
+
+        const oldSp = loadStoredSshpassPath(existingName);
+        if (oldSp) {
+            storeSshpassPath(name, oldSp);
+            try { localStorage.removeItem(sshpassPathStorageKey(existingName)); } catch {}
+        }
     }
 
     if (authType === 'password' && password) {
         storePassword(name, password);
     } else if (authType !== 'password') {
         deleteStoredPassword(existingName);
+    }
+
+    if (authType === 'password' && sshpassPath) {
+        storeSshpassPath(name, sshpassPath);
     }
 
     try {
@@ -701,6 +744,7 @@ async function startSession(profileName) {
         const profile = state.profiles.find(p => p && p.name === profileName);
         const isPasswordAuth = profile?.auth === 'password';
         let password = null;
+        let sshpass_path = null;
 
         if (isPasswordAuth) {
             password = loadStoredPassword(profileName) || null;
@@ -710,9 +754,11 @@ async function startSession(profileName) {
                     storePassword(profileName, password);
                 }
             }
+
+            sshpass_path = loadStoredSshpassPath(profileName) || null;
         }
 
-        await invoke('start_session', { name: profileName, password });
+        await invoke('start_session', { name: profileName, password, sshpassPath: sshpass_path });
     } catch (error) {
         showToast('error', 'Error', `Failed to start session: ${error}`);
         addLog('error', `Failed to start session: ${error}`);
