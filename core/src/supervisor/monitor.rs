@@ -94,6 +94,7 @@ impl SessionMonitor {
         // Log SSH debug/error output to help diagnose password auth failures
         if is_stderr {
             tracing::debug!("SSH stderr: {}", line);
+            self.check_for_forwarding_errors(line).await;
         }
 
         let session = self.session.read().await;
@@ -112,9 +113,24 @@ impl SessionMonitor {
             "pledge: ",
             "debug1: Entering interactive session",
             "debug1: Remote connections from",
+            "debug1: remote forward success",
+            "Allocated port",
         ];
         
         indicators.iter().any(|i| line.contains(i))
+    }
+
+    async fn check_for_forwarding_errors(&self, line: &str) {
+        if line.contains("remote port forwarding failed") {
+            let session = self.session.read().await;
+            tracing::warn!("Session {}: Remote forwarding failed. Check server GatewayPorts setting or if port is in use.", session.profile_name);
+            let _ = self.event_tx.send(Event::session_output(
+                session.id,
+                &session.profile_name,
+                "WARNING: Remote forwarding failed. Check server 'GatewayPorts' setting or port availability.",
+                true,
+            ));
+        }
     }
 
     async fn mark_connected(&self) {
