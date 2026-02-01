@@ -115,6 +115,10 @@ async fn spawn_ssh_with_password(
         ));
     }
 
+    // Add verbose flag for password auth to help debug auth failures
+    let mut verbose_args = args.clone();
+    verbose_args.insert(0, "-v".to_string());
+
     // Try to find sshpass first (Linux/Unix standard)
     let sshpass_found = if let Some(p) = sshpass_path {
         let p = PathBuf::from(p);
@@ -133,13 +137,14 @@ async fn spawn_ssh_with_password(
             "Spawning SSH with password via sshpass. sshpass={:?} ssh={:?} args={:?}",
             sshpass,
             ssh_info.path,
-            args
+            verbose_args
         );
 
         let mut cmd = Command::new(sshpass);
-        cmd.arg("-e").arg(&ssh_info.path).args(&args);
+        cmd.arg("-e").arg(&ssh_info.path).args(&verbose_args);
 
         if let Some(pw) = password {
+            tracing::debug!("Setting SSHPASS env var (password length: {})", pw.len());
             cmd.env("SSHPASS", pw);
         }
 

@@ -91,6 +91,11 @@ impl SessionMonitor {
     }
 
     async fn handle_output(&self, line: &str, is_stderr: bool) {
+        // Log SSH debug/error output to help diagnose password auth failures
+        if is_stderr {
+            tracing::debug!("SSH stderr: {}", line);
+        }
+
         let session = self.session.read().await;
         let _ = self.event_tx.send(Event::session_output(
             session.id,

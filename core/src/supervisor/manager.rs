@@ -459,17 +459,24 @@ async fn run_session_task(
                 }
             }
             MonitorResult::ExitedWithError(code, msg) => {
-                tracing::warn!("Session '{}' exited with code {}: {}", profile.name, code, msg);
-                
+                // sshpass exit code 6 means password authentication failed
+                let error_msg = if code == 6 && matches!(profile.auth, crate::types::AuthMethod::Password) {
+                    format!("{} (SSH exit code 6 typically means: wrong password, password auth not enabled on server, or connection failed)", msg)
+                } else {
+                    msg.clone()
+                };
+
+                tracing::warn!("Session '{}' exited with code {}: {}", profile.name, code, error_msg);
+
                 let mut session = session_handle.write().await;
-                session.last_error = Some(msg.clone());
-                
+                session.last_error = Some(error_msg.clone());
+
                 let _ = event_tx.send(Event::session_disconnected(
                     session.id,
                     &session.profile_name,
-                    Some(msg),
+                    Some(error_msg),
                 ));
-                
+
                 if !profile.auto_reconnect || backoff.is_exhausted() {
                     session.status = SessionStatus::Failed;
                     break;
