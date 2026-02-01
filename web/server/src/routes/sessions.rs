@@ -5,11 +5,12 @@ use axum::{
     Json,
 };
 use reverse_ssh_core::config::load_profiles;
+use reverse_ssh_core::supervisor::StartSessionOptions;
 use crate::state::AppState;
 use serde_json::json;
 use uuid::Uuid;
 
-use super::types::ApiSession;
+use super::types::{ApiSession, StartSessionRequest};
 
 #[utoipa::path(
     get,
@@ -38,6 +39,7 @@ pub async fn list_sessions(State(state): State<AppState>) -> impl IntoResponse {
     params(
         ("name" = String, Path, description = "Profile name to start session for")
     ),
+    request_body = StartSessionRequest,
     responses(
         (status = 200, description = "Session started successfully"),
         (status = 404, description = "Profile not found"),
@@ -48,6 +50,7 @@ pub async fn list_sessions(State(state): State<AppState>) -> impl IntoResponse {
 pub async fn start_session(
     State(state): State<AppState>,
     Path(name): Path<String>,
+    Json(req): Json<StartSessionRequest>,
 ) -> impl IntoResponse {
     // Load profiles to find the one to start
     let profiles = match load_profiles() {
@@ -61,7 +64,16 @@ pub async fn start_session(
     };
 
     if let Some(profile) = profiles.into_iter().find(|p| p.name == name) {
-        match state.handle.start(profile).await {
+        let password = req.password.and_then(|p| {
+            let trimmed = p.trim().to_string();
+            if trimmed.is_empty() { None } else { Some(trimmed) }
+        });
+
+        match state
+            .handle
+            .start_with_options(profile, StartSessionOptions { password })
+            .await
+        {
             Ok(session_id) => (
                 StatusCode::OK, 
                 Json(json!({ "status": "started", "session_id": session_id.to_string() }))

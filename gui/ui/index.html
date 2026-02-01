@@ -366,6 +366,11 @@
                         <label for="profileKeyPath">Key File Path</label>
                         <input type="text" id="profileKeyPath" placeholder="~/.ssh/id_ed25519">
                     </div>
+                    <div class="form-group" id="passwordGroup" style="display: none;">
+                        <label for="profilePassword">Password</label>
+                        <input type="password" id="profilePassword" placeholder="Password">
+                        <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not written to profile files.</p>
+                    </div>
                     <div class="form-group">
                         <label>Tunnels</label>
                         <div class="tunnels-editor" id="tunnelsEditor">
@@ -437,6 +442,11 @@
                     <div class="form-group" id="editKeyPathGroup" style="display: none;">
                         <label for="editProfileKeyPath">Key File Path</label>
                         <input type="text" id="editProfileKeyPath" placeholder="~/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group" id="editPasswordGroup" style="display: none;">
+                        <label for="editProfilePassword">Password</label>
+                        <input type="password" id="editProfilePassword" placeholder="Password">
+                        <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not written to profile files.</p>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>

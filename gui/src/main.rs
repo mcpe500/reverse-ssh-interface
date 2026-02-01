@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 use reverse_ssh_core::{
     config::{load_config, profiles_dir, load_profiles, save_profile, update_profile as core_update_profile, delete_profile as core_delete_profile},
-    supervisor::{SessionManager, SessionManagerHandle},
+    supervisor::{SessionManager, SessionManagerHandle, StartSessionOptions},
     types::{Profile, TunnelSpec, AuthMethod, Session, Event},
     error::CoreError,
 };
@@ -281,6 +281,7 @@ async fn delete_profile(name: String) -> Result<(), String> {
 #[tauri::command]
 async fn start_session(
     name: String,
+    password: Option<String>,
     state: tauri::State<'_, Arc<AppState>>,
     app_handle: AppHandle,
 ) -> Result<SessionInfo, String> {
@@ -292,7 +293,13 @@ async fn start_session(
     let handle = manager_handle.as_ref()
         .ok_or_else(|| "Session manager not initialized".to_string())?;
 
-    let session_id = handle.start(profile)
+    let password = password.and_then(|p| {
+        let trimmed = p.trim().to_string();
+        if trimmed.is_empty() { None } else { Some(trimmed) }
+    });
+
+    let session_id = handle
+        .start_with_options(profile, StartSessionOptions { password })
         .await
         .map_err(|e| e.to_string())?;
 

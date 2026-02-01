@@ -35,6 +35,7 @@ use types::*;
             ApiSessionStatus,
             CreateProfileRequest,
             UpdateProfileRequest,
+            StartSessionRequest,
         )
     ),
     tags(

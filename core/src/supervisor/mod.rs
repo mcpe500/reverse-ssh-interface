@@ -4,6 +4,6 @@ pub mod monitor;
 
 pub use backoff::Backoff;
 pub use manager::{
-    ManagerCommand, ManagerResponse, SessionManager, SessionManagerHandle,
+    ManagerCommand, ManagerResponse, SessionManager, SessionManagerHandle, StartSessionOptions,
 };
 pub use monitor::{MonitorResult, SessionMonitor};

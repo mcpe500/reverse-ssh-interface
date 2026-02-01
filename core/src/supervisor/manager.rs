@@ -21,7 +21,7 @@ use super::monitor::{MonitorResult, SessionMonitor};
 #[derive(Debug)]
 pub enum ManagerCommand {
     /// Start a session for a profile
-    Start(Profile),
+    Start(Profile, StartSessionOptions),
     /// Stop a session by ID
     Stop(Uuid),
     /// Stop all sessions
@@ -30,6 +30,16 @@ pub enum ManagerCommand {
     GetStatus,
     /// Shutdown the manager
     Shutdown,
+}
+
+/// Options that apply to a started session but are not persisted in the profile.
+#[derive(Debug, Clone, Default)]
+pub struct StartSessionOptions {
+    /// Password for `AuthMethod::Password`.
+    ///
+    /// This value is kept in memory for the lifetime of the session and is never
+    /// written into the profile configuration.
+    pub password: Option<String>,
 }
 
 /// Response from the session manager
@@ -120,7 +130,7 @@ impl SessionManager {
 
         while let Some((cmd, response_tx)) = self.cmd_rx.recv().await {
             let response = match cmd {
-                ManagerCommand::Start(profile) => self.handle_start(profile).await,
+                ManagerCommand::Start(profile, options) => self.handle_start(profile, options).await,
                 ManagerCommand::Stop(id) => self.handle_stop(id).await,
                 ManagerCommand::StopAll => self.handle_stop_all().await,
                 ManagerCommand::GetStatus => self.handle_get_status().await,
@@ -138,7 +148,7 @@ impl SessionManager {
         Ok(())
     }
 
-    async fn handle_start(&self, profile: Profile) -> ManagerResponse {
+    async fn handle_start(&self, profile: Profile, options: StartSessionOptions) -> ManagerResponse {
         let ssh_info = match &self.ssh_info {
             Some(info) => info,
             None => return ManagerResponse::Error("SSH not detected".to_string()),
@@ -173,6 +183,7 @@ impl SessionManager {
         // Spawn the session task
         let task_handle = session_handle.clone();
         let task_profile = profile.clone();
+        let task_options = options.clone();
         let task_ssh_info = ssh_info.clone();
         let task_event_tx = self.event_tx.clone();
         let task_sessions = self.sessions.clone();
@@ -182,6 +193,7 @@ impl SessionManager {
             run_session_task(
                 task_handle,
                 task_profile,
+                task_options,
                 task_ssh_info,
                 task_event_tx,
                 task_sessions,
@@ -282,7 +294,12 @@ impl SessionManagerHandle {
 
     /// Start a session for a profile
     pub async fn start(&self, profile: Profile) -> Result<Uuid> {
-        match self.send_command(ManagerCommand::Start(profile)).await? {
+        self.start_with_options(profile, StartSessionOptions::default()).await
+    }
+
+    /// Start a session with non-persisted options (e.g. password auth).
+    pub async fn start_with_options(&self, profile: Profile, options: StartSessionOptions) -> Result<Uuid> {
+        match self.send_command(ManagerCommand::Start(profile, options)).await? {
             ManagerResponse::Started(id) => Ok(id),
             ManagerResponse::Error(e) => Err(CoreError::Other(e)),
             _ => Err(CoreError::Other("Unexpected response".to_string())),
@@ -332,6 +349,7 @@ impl SessionManagerHandle {
 async fn run_session_task(
     session_handle: SessionHandle,
     profile: Profile,
+    options: StartSessionOptions,
     ssh_info: SshInfo,
     event_tx: EventSender,
     sessions: Arc<RwLock<HashMap<Uuid, ActiveSession>>>,
@@ -350,7 +368,7 @@ async fn run_session_task(
 
     loop {
         // Spawn SSH process
-        let process = match spawn_ssh(&ssh_info, &profile).await {
+        let process = match spawn_ssh(&ssh_info, &profile, options.password.as_deref()).await {
             Ok(p) => p,
             Err(e) => {
                 tracing::error!("Failed to spawn SSH for '{}': {}", profile.name, e);

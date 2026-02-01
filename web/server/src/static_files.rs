@@ -390,16 +390,21 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     </div>
                     <div class="form-group">
                         <label for="profileAuth">Authentication</label>
-                        <select id="profileAuth" onchange="toggleKeyPath('profileAuth', 'profileKeyPathGroup')">
+                        <select id="profileAuth" onchange="toggleAuthFields('profileAuth', 'profileKeyPathGroup', 'profilePasswordGroup')">
                             <option value="agent">SSH Agent (Recommended)</option>
                             <option value="key_file">Key File</option>
                             <option value="password">Password (via sshpass + SSHPASS env var)</option>
                         </select>
-                        <small>Password is not stored. Set SSHPASS in the web server environment.</small>
+                        <small>For password auth, enter a password below (stored in this browser) or leave it empty to use SSHPASS from the server environment.</small>
                     </div>
                     <div class="form-group" id="profileKeyPathGroup" style="display:none;">
                         <label for="profileKeyPath">Key File Path</label>
                         <input type="text" id="profileKeyPath" placeholder="/home/user/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group" id="profilePasswordGroup" style="display:none;">
+                        <label for="profilePassword">Password</label>
+                        <input type="password" id="profilePassword" placeholder="Password">
+                        <small>Stored in this browser's local storage. Not written to profile files.</small>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
@@ -454,16 +459,21 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     </div>
                     <div class="form-group">
                         <label for="editProfileAuth">Authentication</label>
-                        <select id="editProfileAuth" onchange="toggleKeyPath('editProfileAuth', 'editKeyPathGroup')">
+                        <select id="editProfileAuth" onchange="toggleAuthFields('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup')">
                             <option value="agent">SSH Agent (Recommended)</option>
                             <option value="key_file">Key File</option>
                             <option value="password">Password (via sshpass + SSHPASS env var)</option>
                         </select>
-                        <small>Password is not stored. Set SSHPASS in the web server environment.</small>
+                        <small>For password auth, enter a password below (stored in this browser) or leave it empty to use SSHPASS from the server environment.</small>
                     </div>
                     <div class="form-group" id="editKeyPathGroup" style="display:none;">
                         <label for="editProfileKeyPath">Key File Path</label>
                         <input type="text" id="editProfileKeyPath" placeholder="/home/user/.ssh/id_ed25519">
+                    </div>
+                    <div class="form-group" id="editPasswordGroup" style="display:none;">
+                        <label for="editProfilePassword">Password</label>
+                        <input type="password" id="editProfilePassword" placeholder="Password">
+                        <small>Stored in this browser's local storage. Not written to profile files.</small>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
@@ -484,6 +494,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
     <script>
         const API_BASE = '';
         let ws = null;
+        let profilesCache = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -522,6 +533,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             try {
                 const response = await fetch(`${API_BASE}/api/profiles`);
                 const profiles = await response.json();
+                profilesCache = Array.isArray(profiles) ? profiles : [];
                 renderProfiles(profiles);
             } catch (error) {
                 console.error('Failed to load profiles:', error);
@@ -574,10 +586,46 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
             `).join('');
         }
 
-        function toggleKeyPath(selectId, groupId) {
+        function toggleAuthFields(selectId, keyGroupId, passwordGroupId) {
             const value = document.getElementById(selectId).value;
-            const group = document.getElementById(groupId);
-            group.style.display = value === 'key_file' ? 'block' : 'none';
+
+            const keyGroup = document.getElementById(keyGroupId);
+            if (keyGroup) {
+                keyGroup.style.display = value === 'key_file' ? 'block' : 'none';
+            }
+
+            const passwordGroup = document.getElementById(passwordGroupId);
+            if (passwordGroup) {
+                passwordGroup.style.display = value === 'password' ? 'block' : 'none';
+            }
+        }
+
+        function passwordStorageKey(profileName) {
+            return `rssh.password.${profileName}`;
+        }
+
+        function loadStoredPassword(profileName) {
+            try {
+                return localStorage.getItem(passwordStorageKey(profileName)) || '';
+            } catch {
+                return '';
+            }
+        }
+
+        function storePassword(profileName, password) {
+            try {
+                localStorage.setItem(passwordStorageKey(profileName), password);
+            } catch {
+                // ignore
+            }
+        }
+
+        function deleteStoredPassword(profileName) {
+            try {
+                localStorage.removeItem(passwordStorageKey(profileName));
+            } catch {
+                // ignore
+            }
         }
 
         function addTunnelRow(editorId, preset) {
@@ -678,8 +726,28 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
         // Start session
         async function startSession(profileName) {
             try {
+                const profile = profilesCache.find(p => p && p.name === profileName);
+                const isPasswordAuth = profile?.auth?.type === 'password';
+                const body = {};
+
+                if (isPasswordAuth) {
+                    let pw = loadStoredPassword(profileName);
+                    if (!pw) {
+                        pw = prompt(`Enter SSH password for "${profileName}" (will be stored in this browser):`) || '';
+                        if (pw) {
+                            storePassword(profileName, pw);
+                        }
+                    }
+
+                    if (pw) {
+                        body.password = pw;
+                    }
+                }
+
                 const response = await fetch(`${API_BASE}/api/sessions/${encodeURIComponent(profileName)}/start`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
                 const result = await response.json();
                 
@@ -751,6 +819,16 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 return;
             }
 
+            if (addAuthType === 'password') {
+                // Password is stored locally (not sent to server on profile creation).
+                // It will be used when starting the session.
+                // Note: do not block profile creation if empty; server can still use SSHPASS env.
+                const pw = document.getElementById('profilePassword').value || '';
+                if (pw) {
+                    storePassword(document.getElementById('profileName').value, pw);
+                }
+            }
+
             const profile = {
                 name: document.getElementById('profileName').value,
                 host: document.getElementById('profileHost').value,
@@ -773,6 +851,7 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                     loadProfiles();
                     document.getElementById('addProfileForm').reset();
                     document.getElementById('profileKeyPathGroup').style.display = 'none';
+                    document.getElementById('profilePasswordGroup').style.display = 'none';
                 } else {
                     const result = await response.json();
                     showToast(result.error || 'Failed to create profile', 'error');
@@ -800,13 +879,9 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 // auth
                 const authType = profile.auth?.type || 'agent';
                 document.getElementById('editProfileAuth').value = authType;
-                if (authType === 'key_file') {
-                    document.getElementById('editProfileKeyPath').value = profile.auth.path || '';
-                    document.getElementById('editKeyPathGroup').style.display = 'block';
-                } else {
-                    document.getElementById('editProfileKeyPath').value = '';
-                    document.getElementById('editKeyPathGroup').style.display = 'none';
-                }
+                toggleAuthFields('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup');
+                document.getElementById('editProfileKeyPath').value = authType === 'key_file' ? (profile.auth.path || '') : '';
+                document.getElementById('editProfilePassword').value = authType === 'password' ? loadStoredPassword(profileName) : '';
 
                 // tunnels
                 const editor = document.getElementById('editTunnelsEditor');
@@ -844,8 +919,28 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
                 return;
             }
 
+            // Keep password locally in the browser for password auth.
+            const newName = document.getElementById('editProfileName').value;
+            if (editAuthType === 'password') {
+                const pw = document.getElementById('editProfilePassword').value || '';
+                if (pw) {
+                    storePassword(newName, pw);
+                }
+            } else {
+                deleteStoredPassword(existingName);
+            }
+
+            // If renamed, also move stored password key.
+            if (existingName && newName && existingName !== newName) {
+                const oldPw = loadStoredPassword(existingName);
+                if (oldPw) {
+                    storePassword(newName, oldPw);
+                    deleteStoredPassword(existingName);
+                }
+            }
+
             const payload = {
-                name: document.getElementById('editProfileName').value,
+                name: newName,
                 host: document.getElementById('editProfileHost').value,
                 user: document.getElementById('editProfileUser').value,
                 port: parseInt(document.getElementById('editProfilePort').value) || 22,
@@ -876,6 +971,10 @@ const INDEX_HTML: &str = r##"<!DOCTYPE html>
         // Modal functions
         function showAddProfileModal() {
             resetTunnelsEditor('tunnelsEditor');
+            document.getElementById('profileAuth').value = 'agent';
+            document.getElementById('profileKeyPath').value = '';
+            document.getElementById('profilePassword').value = '';
+            toggleAuthFields('profileAuth', 'profileKeyPathGroup', 'profilePasswordGroup');
             document.getElementById('addProfileModal').classList.add('active');
         }
 

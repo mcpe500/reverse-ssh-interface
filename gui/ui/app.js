@@ -311,6 +311,7 @@ function showCreateProfileModal() {
     // Reset form
     document.getElementById('createProfileForm').reset();
     document.getElementById('keyPathGroup').style.display = 'none';
+    document.getElementById('passwordGroup').style.display = 'none';
     
     // Reset tunnels to single row
     setTunnelsEditor('tunnelsEditor', [], 'removeTunnelRow');
@@ -318,18 +319,48 @@ function showCreateProfileModal() {
     showModal('createProfileModal');
 }
 
-function toggleKeyPathFor(selectId, groupId) {
+function passwordStorageKey(profileName) {
+    return `rssh.password.${profileName}`;
+}
+
+function loadStoredPassword(profileName) {
+    try {
+        return localStorage.getItem(passwordStorageKey(profileName)) || '';
+    } catch {
+        return '';
+    }
+}
+
+function storePassword(profileName, password) {
+    try {
+        localStorage.setItem(passwordStorageKey(profileName), password);
+    } catch {
+        // ignore
+    }
+}
+
+function deleteStoredPassword(profileName) {
+    try {
+        localStorage.removeItem(passwordStorageKey(profileName));
+    } catch {
+        // ignore
+    }
+}
+
+function toggleAuthFieldsFor(selectId, keyGroupId, passwordGroupId) {
     const auth = document.getElementById(selectId).value;
-    const keyGroup = document.getElementById(groupId);
-    keyGroup.style.display = auth === 'key' ? 'block' : 'none';
+    const keyGroup = document.getElementById(keyGroupId);
+    const passwordGroup = document.getElementById(passwordGroupId);
+    if (keyGroup) keyGroup.style.display = auth === 'key' ? 'block' : 'none';
+    if (passwordGroup) passwordGroup.style.display = auth === 'password' ? 'block' : 'none';
 }
 
 function toggleKeyPath() {
-    toggleKeyPathFor('profileAuth', 'keyPathGroup');
+    toggleAuthFieldsFor('profileAuth', 'keyPathGroup', 'passwordGroup');
 }
 
 function toggleEditKeyPath() {
-    toggleKeyPathFor('editProfileAuth', 'editKeyPathGroup');
+    toggleAuthFieldsFor('editProfileAuth', 'editKeyPathGroup', 'editPasswordGroup');
 }
 
 function tunnelRowHtml(tunnel, removeHandlerName) {
@@ -424,6 +455,7 @@ async function createProfile(event) {
     const user = document.getElementById('profileUser').value.trim();
     const authType = document.getElementById('profileAuth').value;
     const keyPath = document.getElementById('profileKeyPath').value.trim();
+    const password = document.getElementById('profilePassword')?.value || '';
     const autoReconnect = document.getElementById('profileAutoReconnect').checked;
 
     if (authType === 'key' && !keyPath) {
@@ -444,6 +476,10 @@ async function createProfile(event) {
         auth = `key:${keyPath}`;
     } else if (authType === 'password') {
         auth = 'password';
+    }
+
+    if (authType === 'password' && password) {
+        storePassword(name, password);
     }
     
     try {
@@ -502,6 +538,7 @@ async function showEditProfileModal(name) {
         document.getElementById('editProfileAuth').value = authType;
         document.getElementById('editProfileKeyPath').value = keyPath;
         toggleEditKeyPath();
+        document.getElementById('editProfilePassword').value = authType === 'password' ? loadStoredPassword(name) : '';
 
         // tunnels
         setTunnelsEditor('editTunnelsEditor', profile.tunnels, 'removeEditTunnelRow');
@@ -522,6 +559,7 @@ async function updateProfile(event) {
     const user = document.getElementById('editProfileUser').value.trim();
     const authType = document.getElementById('editProfileAuth').value;
     const keyPath = document.getElementById('editProfileKeyPath').value.trim();
+    const password = document.getElementById('editProfilePassword')?.value || '';
     const autoReconnect = document.getElementById('editProfileAutoReconnect').checked;
 
     if (authType === 'key' && !keyPath) {
@@ -540,6 +578,20 @@ async function updateProfile(event) {
         auth = `key:${keyPath}`;
     } else if (authType === 'password') {
         auth = 'password';
+    }
+
+    if (existingName && name && existingName !== name) {
+        const oldPw = loadStoredPassword(existingName);
+        if (oldPw) {
+            storePassword(name, oldPw);
+            deleteStoredPassword(existingName);
+        }
+    }
+
+    if (authType === 'password' && password) {
+        storePassword(name, password);
+    } else if (authType !== 'password') {
+        deleteStoredPassword(existingName);
     }
 
     try {
@@ -646,7 +698,21 @@ function renderDashboardSessions() {
 async function startSession(profileName) {
     try {
         addLog('info', `Starting session for profile: ${profileName}`);
-        await invoke('start_session', { name: profileName });
+        const profile = state.profiles.find(p => p && p.name === profileName);
+        const isPasswordAuth = profile?.auth === 'password';
+        let password = null;
+
+        if (isPasswordAuth) {
+            password = loadStoredPassword(profileName) || null;
+            if (!password) {
+                password = prompt(`Enter SSH password for "${profileName}" (will be stored locally):`) || null;
+                if (password) {
+                    storePassword(profileName, password);
+                }
+            }
+        }
+
+        await invoke('start_session', { name: profileName, password });
     } catch (error) {
         showToast('error', 'Error', `Failed to start session: ${error}`);
         addLog('error', `Failed to start session: ${error}`);

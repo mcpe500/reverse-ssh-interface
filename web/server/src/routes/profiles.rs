@@ -188,7 +188,7 @@ pub async fn update_profile(
     Path(name): Path<String>,
     Json(req): Json<UpdateProfileRequest>,
 ) -> impl IntoResponse {
-    let mut profiles = match load_profiles() {
+    let profiles = match load_profiles() {
         Ok(p) => p,
         Err(e) => {
             return (

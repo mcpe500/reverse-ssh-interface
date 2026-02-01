@@ -51,11 +51,18 @@ impl SshProcess {
     }
 }
 
-/// Spawn an SSH process for the given profile
-pub async fn spawn_ssh(ssh_info: &SshInfo, profile: &Profile) -> Result<SshProcess> {
+/// Spawn an SSH process for the given profile.
+///
+/// `password` is only used when `profile.auth` is `AuthMethod::Password`.
+/// It is applied to the spawned child process environment as `SSHPASS`.
+pub async fn spawn_ssh(
+    ssh_info: &SshInfo,
+    profile: &Profile,
+    password: Option<&str>,
+) -> Result<SshProcess> {
     let args = SshArgs::from_profile(profile).build_tunnel_mode();
     match profile.auth {
-        AuthMethod::Password => spawn_ssh_with_password(ssh_info, args).await,
+        AuthMethod::Password => spawn_ssh_with_password(ssh_info, args, password).await,
         _ => spawn_ssh_with_args(ssh_info, args).await,
     }
 }
@@ -88,14 +95,21 @@ fn find_in_path(exe_base_name: &str) -> Option<PathBuf> {
     None
 }
 
-async fn spawn_ssh_with_password(ssh_info: &SshInfo, args: Vec<String>) -> Result<SshProcess> {
+async fn spawn_ssh_with_password(
+    ssh_info: &SshInfo,
+    args: Vec<String>,
+    password: Option<&str>,
+) -> Result<SshProcess> {
     // Validate SSH args before spawning
     validate_args(&args).map_err(|e| CoreError::SshSpawnFailed(e))?;
 
-    // sshpass reads the password from SSHPASS when using -e
-    if std::env::var("SSHPASS").is_err() {
+    // sshpass reads the password from SSHPASS when using -e.
+    // Prefer an explicitly-provided password (e.g. from frontend), otherwise fall back
+    // to server environment.
+    let has_password = password.is_some() || std::env::var("SSHPASS").is_ok();
+    if !has_password {
         return Err(CoreError::SshSpawnFailed(
-            "Password auth requires SSHPASS env var to be set (password is not stored).".to_string(),
+            "Password auth requires a password. Provide it via the start-session request (recommended) or set SSHPASS in the parent process environment.".to_string(),
         ));
     }
 
@@ -112,10 +126,14 @@ async fn spawn_ssh_with_password(ssh_info: &SshInfo, args: Vec<String>) -> Resul
         args
     );
 
-    let mut child = Command::new(sshpass)
-        .arg("-e")
-        .arg(&ssh_info.path)
-        .args(&args)
+    let mut cmd = Command::new(sshpass);
+    cmd.arg("-e").arg(&ssh_info.path).args(&args);
+
+    if let Some(pw) = password {
+        cmd.env("SSHPASS", pw);
+    }
+
+    let mut child = cmd
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

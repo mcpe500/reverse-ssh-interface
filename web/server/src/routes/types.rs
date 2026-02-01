@@ -96,6 +96,18 @@ pub struct UpdateProfileRequest {
     pub tunnels: Option<Vec<ApiTunnelSpec>>,
 }
 
+/// Request to start a session.
+///
+/// If `password` is provided, it will be used for `AuthMethod::Password` without
+/// requiring `SSHPASS` to be set on the web server process.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Default)]
+pub struct StartSessionRequest {
+    /// Password for password-based auth.
+    ///
+    /// This is not stored in profile configuration.
+    pub password: Option<String>,
+}
+
 /// API representation of session status
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
