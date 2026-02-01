@@ -95,7 +95,10 @@ pub struct Profile {
     /// Custom known_hosts file path
     pub known_hosts_file: Option<String>,
     /// Custom identity file path
+    /// Custom identity file path
     pub identity_file: Option<String>,
+    /// Password for password auth (optional, saved in profile)
+    pub password: Option<String>,
 }
 
 fn default_ssh_port() -> u16 {
@@ -132,6 +135,7 @@ impl Profile {
             ssh_path: None,
             known_hosts_file: None,
             identity_file: None,
+            password: None,
         }
     }
 

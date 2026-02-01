@@ -376,7 +376,7 @@ async fn run_session_task(
         let process = match spawn_ssh(
             &ssh_info,
             &profile,
-            options.password.as_deref(),
+            options.password.as_deref().or(profile.password.as_deref()),
             options.sshpass_path.as_deref(),
         )
         .await
