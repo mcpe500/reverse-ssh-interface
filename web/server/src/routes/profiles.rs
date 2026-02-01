@@ -90,6 +90,7 @@ pub async fn create_profile(Json(req): Json<CreateProfileRequest>) -> impl IntoR
         ssh_path: None,
         known_hosts_file: None,
         identity_file: None,
+        password: None,
     };
 
     if let Err(e) = save_profile(&profile) {
