@@ -25,18 +25,18 @@ const state = {
 document.addEventListener('DOMContentLoaded', async () => {
     // Setup navigation
     setupNavigation();
-    
+
     // Setup event listeners
     setupEventListeners();
-    
+
     // Load initial data
     await loadProfiles();
     await loadSessions();
     await loadSettings();
-    
+
     // Start auto-refresh
     setInterval(loadSessions, 5000);
-    
+
     // Log startup
     addLog('info', 'Application initialized');
 });
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
-    
+
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const tab = item.dataset.tab;
@@ -61,12 +61,12 @@ function switchTab(tabName) {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.toggle('active', item.dataset.tab === tabName);
     });
-    
+
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.toggle('active', content.id === `tab-${tabName}`);
     });
-    
+
     // Refresh data for specific tabs
     if (tabName === 'profiles') {
         loadProfiles();
@@ -87,43 +87,43 @@ function setupEventListeners() {
         showToast('success', 'Session Started', `Connected to ${session.profile_name}`);
         loadSessions();
     });
-    
+
     listen('session-connected', (event) => {
         addLog('success', `Session connected`);
         loadSessions();
     });
-    
+
     listen('session-disconnected', (event) => {
         const data = event.payload;
         addLog('warning', `Session disconnected: ${data.reason || 'Unknown reason'}`);
         loadSessions();
     });
-    
+
     listen('session-reconnecting', (event) => {
         const data = event.payload;
         addLog('warning', `Reconnecting... (attempt ${data.attempt})`);
         loadSessions();
     });
-    
+
     listen('session-failed', (event) => {
         const data = event.payload;
         addLog('error', `Session failed: ${data.error}`);
         showToast('error', 'Session Failed', data.error);
         loadSessions();
     });
-    
+
     listen('session-stopped', (event) => {
         addLog('info', `Session stopped: ${event.payload}`);
         loadSessions();
     });
-    
+
     listen('session-output', (event) => {
         const data = event.payload;
         if (data.output) {
             addLog('debug', data.output);
         }
     });
-    
+
     listen('all-sessions-stopped', () => {
         addLog('info', 'All sessions stopped');
         showToast('info', 'Sessions Stopped', 'All tunnel sessions have been stopped');
@@ -150,12 +150,12 @@ async function loadProfiles() {
 
 function renderProfiles() {
     const grid = document.getElementById('profilesGrid');
-    
+
     if (state.profiles.length === 0) {
         grid.innerHTML = '<p class="empty-state">No profiles found. Create your first profile!</p>';
         return;
     }
-    
+
     grid.innerHTML = state.profiles.map(profile => `
         <div class="profile-card" onclick='showProfileDetail(${JSON.stringify(profile.name)})'>
             <div class="profile-card-header">
@@ -194,12 +194,12 @@ function renderProfiles() {
 
 function renderQuickActions() {
     const container = document.getElementById('quickProfilesList');
-    
+
     if (state.profiles.length === 0) {
         container.innerHTML = '<p class="empty-state">No profiles yet. Create one to get started!</p>';
         return;
     }
-    
+
     container.innerHTML = state.profiles.slice(0, 6).map(profile => `
         <button class="quick-action-btn" onclick='startSession(${JSON.stringify(profile.name)})'>
             <div class="profile-name">${escapeHtml(profile.name)}</div>
@@ -210,12 +210,12 @@ function renderQuickActions() {
 
 function renderQuickConnect() {
     const list = document.getElementById('quickConnectList');
-    
+
     if (state.profiles.length === 0) {
         list.innerHTML = '<p class="empty-state">No profiles available</p>';
         return;
     }
-    
+
     list.innerHTML = state.profiles.map(profile => `
         <div class="quick-connect-item" onclick='startSession(${JSON.stringify(profile.name)}); closeModal("quickConnectModal");'>
             <div>
@@ -233,9 +233,9 @@ async function showProfileDetail(name) {
     try {
         const profile = await invoke('get_profile', { name });
         state.currentProfile = profile;
-        
+
         document.getElementById('profileDetailTitle').textContent = profile.name;
-        
+
         const body = document.getElementById('profileDetailBody');
         body.innerHTML = `
             <div class="profile-detail">
@@ -266,7 +266,7 @@ async function showProfileDetail(name) {
                 </div>
             `).join('')}
         `;
-        
+
         showModal('profileDetailModal');
     } catch (error) {
         showToast('error', 'Error', `Failed to load profile: ${error}`);
@@ -313,10 +313,10 @@ function showCreateProfileModal() {
     document.getElementById('keyPathGroup').style.display = 'none';
     document.getElementById('passwordGroup').style.display = 'none';
     document.getElementById('sshpassPathGroup').style.display = 'none';
-    
+
     // Reset tunnels to single row
     setTunnelsEditor('tunnelsEditor', [], 'removeTunnelRow');
-    
+
     showModal('createProfileModal');
 }
 
@@ -390,13 +390,13 @@ function toggleEditKeyPath() {
 }
 
 function tunnelRowHtml(tunnel, removeHandlerName) {
-    const remoteBind = tunnel?.remote_bind ?? 'localhost';
+    const remoteBind = tunnel?.remote_bind ?? '0.0.0.0';
     const remotePort = tunnel?.remote_port ?? '';
     const localHost = tunnel?.local_host ?? 'localhost';
     const localPort = tunnel?.local_port ?? '';
 
     return `
-        <input type="text" class="tunnel-remote-bind" placeholder="Remote Bind" value="${escapeAttribute(remoteBind)}">
+        <input type="text" class="tunnel-remote-bind" placeholder="Remote Bind (0.0.0.0)" value="${escapeAttribute(remoteBind)}">
         <input type="number" class="tunnel-remote" placeholder="Remote Port" min="1" max="65535" value="${remotePort}">
         <span class="tunnel-arrow">→</span>
         <input type="text" class="tunnel-local-host" placeholder="localhost" value="${escapeAttribute(localHost)}">
@@ -454,7 +454,7 @@ function readTunnelsFrom(editorId) {
     const tunnels = [];
 
     for (const row of tunnelRows) {
-        const remoteBind = (row.querySelector('.tunnel-remote-bind')?.value || 'localhost').trim() || 'localhost';
+        const remoteBind = (row.querySelector('.tunnel-remote-bind')?.value || '0.0.0.0').trim() || '0.0.0.0';
         const remotePort = row.querySelector('.tunnel-remote')?.value;
         const localHost = (row.querySelector('.tunnel-local-host')?.value || 'localhost').trim() || 'localhost';
         const localPort = row.querySelector('.tunnel-local-port')?.value;
@@ -474,7 +474,7 @@ function readTunnelsFrom(editorId) {
 
 async function createProfile(event) {
     event.preventDefault();
-    
+
     const name = document.getElementById('profileName').value.trim();
     const host = document.getElementById('profileHost').value.trim();
     const port = document.getElementById('profilePort').value || null;
@@ -491,12 +491,12 @@ async function createProfile(event) {
     }
 
     const tunnels = readTunnelsFrom('tunnelsEditor');
-    
+
     if (tunnels.length === 0) {
         showToast('warning', 'Warning', 'Please add at least one tunnel');
         return;
     }
-    
+
     // Build auth
     let auth = 'agent';
     if (authType === 'key' && keyPath) {
@@ -512,7 +512,7 @@ async function createProfile(event) {
     if (authType === 'password' && sshpassPath) {
         storeSshpassPath(name, sshpassPath);
     }
-    
+
     try {
         await invoke('create_profile', {
             request: {
@@ -526,7 +526,7 @@ async function createProfile(event) {
                 auto_reconnect: autoReconnect,
             }
         });
-        
+
         showToast('success', 'Profile Created', `Profile "${name}" has been created`);
         closeModal('createProfileModal');
         loadProfiles();
@@ -623,7 +623,7 @@ async function updateProfile(event) {
         const oldSp = loadStoredSshpassPath(existingName);
         if (oldSp) {
             storeSshpassPath(name, oldSp);
-            try { localStorage.removeItem(sshpassPathStorageKey(existingName)); } catch {}
+            try { localStorage.removeItem(sshpassPathStorageKey(existingName)); } catch { }
         }
     }
 
@@ -682,12 +682,12 @@ function refreshSessions() {
 
 function renderSessions() {
     const tbody = document.getElementById('sessionsTableBody');
-    
+
     if (state.sessions.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No active sessions</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = state.sessions.map(session => `
         <tr>
             <td>
@@ -713,15 +713,15 @@ function renderSessions() {
 function renderDashboardSessions() {
     const container = document.getElementById('dashboardSessionsList');
     const stopAllBtn = document.getElementById('stopAllBtn');
-    
+
     if (state.sessions.length === 0) {
         container.innerHTML = '<p class="empty-state">No active sessions</p>';
         stopAllBtn.style.display = 'none';
         return;
     }
-    
+
     stopAllBtn.style.display = 'block';
-    
+
     container.innerHTML = state.sessions.map(session => `
         <div class="session-item">
             <div class="session-info">
@@ -797,14 +797,14 @@ async function loadSettings() {
         // Get profiles path
         const path = await invoke('get_profiles_path');
         document.getElementById('profilesPath').textContent = path;
-        
+
         // Get config
         const config = await invoke('get_config');
-        
+
         if (config.general) {
             document.getElementById('startMinimized').checked = config.general.start_minimized || false;
         }
-        
+
         if (config.ssh) {
             document.getElementById('keepaliveInterval').value = config.ssh.default_keepalive_interval || 20;
             document.getElementById('hostKeyChecking').value = config.ssh.strict_host_key_checking || 'accept_new';
@@ -838,7 +838,7 @@ async function openExternal(url) {
 function addLog(level, message) {
     const output = document.getElementById('logsOutput');
     const autoScroll = document.getElementById('autoScrollLogs').checked;
-    
+
     const time = new Date().toLocaleTimeString();
     const entry = document.createElement('div');
     entry.className = `log-entry ${level}`;
@@ -846,14 +846,14 @@ function addLog(level, message) {
         <span class="log-time">[${time}]</span>
         <span class="log-message">${escapeHtml(message)}</span>
     `;
-    
+
     output.appendChild(entry);
-    
+
     // Keep only last 500 entries
     while (output.children.length > 500) {
         output.removeChild(output.firstChild);
     }
-    
+
     if (autoScroll) {
         output.scrollTop = output.scrollHeight;
     }
@@ -875,10 +875,10 @@ function clearLogs() {
 
 function updateStats() {
     document.getElementById('profilesCount').textContent = state.profiles.length;
-    document.getElementById('activeSessionsCount').textContent = state.sessions.filter(s => 
+    document.getElementById('activeSessionsCount').textContent = state.sessions.filter(s =>
         s.status === 'Connected' || s.status === 'Starting' || s.status === 'Reconnecting'
     ).length;
-    
+
     // Count active tunnels
     let tunnelCount = 0;
     for (const session of state.sessions) {
@@ -929,7 +929,7 @@ function confirmAction() {
 
 function showToast(type, title, message) {
     const container = document.getElementById('toastContainer');
-    
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
@@ -941,9 +941,9 @@ function showToast(type, title, message) {
             <div class="toast-message">${escapeHtml(message)}</div>
         </div>
     `;
-    
+
     container.appendChild(toast);
-    
+
     // Remove after 5 seconds
     setTimeout(() => {
         toast.style.animation = 'slideIn 0.3s ease reverse';
@@ -1021,13 +1021,13 @@ document.addEventListener('keydown', (e) => {
             modal.classList.remove('active');
         });
     }
-    
+
     // Ctrl+N for new profile
     if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         showCreateProfileModal();
     }
-    
+
     // Ctrl+K for quick connect
     if (e.ctrlKey && e.key === 'k') {
         e.preventDefault();

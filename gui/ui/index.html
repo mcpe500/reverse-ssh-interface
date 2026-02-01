@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reverse SSH Interface</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="app">
         <!-- Sidebar -->
@@ -13,51 +15,52 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                        <path d="M2 17l10 5 10-5"/>
-                        <path d="M2 12l10 5 10-5"/>
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
                     </svg>
                     <span>RSSH</span>
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <button class="nav-item active" data-tab="dashboard">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="7" height="9"/>
-                        <rect x="14" y="3" width="7" height="5"/>
-                        <rect x="14" y="12" width="7" height="9"/>
-                        <rect x="3" y="16" width="7" height="5"/>
+                        <rect x="3" y="3" width="7" height="9" />
+                        <rect x="14" y="3" width="7" height="5" />
+                        <rect x="14" y="12" width="7" height="9" />
+                        <rect x="3" y="16" width="7" height="5" />
                     </svg>
                     <span>Dashboard</span>
                 </button>
                 <button class="nav-item" data-tab="profiles">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                        <polyline points="17 21 17 13 7 13 7 21"/>
-                        <polyline points="7 3 7 8 15 8"/>
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
                     </svg>
                     <span>Profiles</span>
                 </button>
                 <button class="nav-item" data-tab="sessions">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                     </svg>
                     <span>Sessions</span>
                 </button>
                 <button class="nav-item" data-tab="logs">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
                     </svg>
                     <span>Logs</span>
                 </button>
                 <button class="nav-item" data-tab="settings">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
                     </svg>
                     <span>Settings</span>
                 </button>
@@ -79,9 +82,10 @@
                     <h1>Dashboard</h1>
                     <div class="header-actions">
                         <button class="btn btn-primary" onclick="showQuickConnect()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
                             Quick Connect
                         </button>
@@ -93,8 +97,9 @@
                     <div class="stats-row">
                         <div class="stat-card">
                             <div class="stat-icon active">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                                 </svg>
                             </div>
                             <div class="stat-info">
@@ -104,8 +109,9 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon profiles">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                                 </svg>
                             </div>
                             <div class="stat-info">
@@ -115,9 +121,10 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon tunnels">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                    <path d="M2 17l10 5 10-5"/>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                    <path d="M2 17l10 5 10-5" />
                                 </svg>
                             </div>
                             <div class="stat-info">
@@ -143,7 +150,8 @@
                     <div class="card">
                         <div class="card-header">
                             <h2>Active Sessions</h2>
-                            <button class="btn btn-ghost btn-sm" onclick="stopAllSessions()" id="stopAllBtn" style="display: none;">
+                            <button class="btn btn-ghost btn-sm" onclick="stopAllSessions()" id="stopAllBtn"
+                                style="display: none;">
                                 Stop All
                             </button>
                         </div>
@@ -162,9 +170,10 @@
                     <h1>Profiles</h1>
                     <div class="header-actions">
                         <button class="btn btn-primary" onclick="showCreateProfileModal()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
                             New Profile
                         </button>
@@ -182,10 +191,11 @@
                     <h1>Sessions</h1>
                     <div class="header-actions">
                         <button class="btn btn-secondary" onclick="refreshSessions()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 4 23 10 17 10"/>
-                                <polyline points="1 20 1 14 7 14"/>
-                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="23 4 23 10 17 10" />
+                                <polyline points="1 20 1 14 7 14" />
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
                             </svg>
                             Refresh
                         </button>
@@ -285,7 +295,8 @@
                                     <p class="setting-description">Seconds between keep-alive packets</p>
                                 </div>
                                 <div class="setting-value">
-                                    <input type="number" id="keepaliveInterval" value="20" min="5" max="300" class="input-sm">
+                                    <input type="number" id="keepaliveInterval" value="20" min="5" max="300"
+                                        class="input-sm">
                                     <span>seconds</span>
                                 </div>
                             </div>
@@ -315,8 +326,11 @@
                                 <p>Version 0.1.0</p>
                                 <p class="text-muted">A powerful tool for managing reverse SSH tunnels</p>
                                 <div class="about-links">
-                                    <a href="#" onclick="openExternal('https://github.com/mcpe500/reverse-ssh-interface')">GitHub</a>
-                                    <a href="#" onclick="openExternal('https://github.com/mcpe500/reverse-ssh-interface/issues')">Report Issue</a>
+                                    <a href="#"
+                                        onclick="openExternal('https://github.com/mcpe500/reverse-ssh-interface')">GitHub</a>
+                                    <a href="#"
+                                        onclick="openExternal('https://github.com/mcpe500/reverse-ssh-interface/issues')">Report
+                                        Issue</a>
                                 </div>
                             </div>
                         </div>
@@ -369,27 +383,35 @@
                     <div class="form-group" id="passwordGroup" style="display: none;">
                         <label for="profilePassword">Password</label>
                         <input type="password" id="profilePassword" placeholder="Password">
-                        <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not written to profile files.</p>
+                        <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not
+                            written to profile files.</p>
                     </div>
                     <div class="form-group" id="sshpassPathGroup" style="display: none;">
                         <label for="profileSshpassPath">sshpass/plink Path</label>
-                        <input type="text" id="profileSshpassPath" placeholder="/usr/bin/sshpass or C:\\Program Files\\PuTTY\\plink.exe">
-                        <p class="text-muted" style="margin-top: 6px;">Windows: Use PuTTY's plink.exe. Linux/Mac: Use sshpass. Leave empty if in PATH.</p>
+                        <input type="text" id="profileSshpassPath"
+                            placeholder="/usr/bin/sshpass or C:\\Program Files\\PuTTY\\plink.exe">
+                        <p class="text-muted" style="margin-top: 6px;">Windows: Use PuTTY's plink.exe. Linux/Mac: Use
+                            sshpass. Leave empty if in PATH.</p>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
                         <div class="tunnels-editor" id="tunnelsEditor">
                             <div class="tunnel-row">
-                                <input type="text" class="tunnel-remote-bind" placeholder="Remote Bind" value="localhost">
-                                <input type="number" class="tunnel-remote" placeholder="Remote Port" min="1" max="65535">
+                                <input type="text" class="tunnel-remote-bind" placeholder="Remote Bind (0.0.0.0)"
+                                    value="0.0.0.0">
+                                <input type="number" class="tunnel-remote" placeholder="Remote Port" min="1"
+                                    max="65535">
                                 <span class="tunnel-arrow">→</span>
                                 <input type="text" class="tunnel-local-host" placeholder="localhost">
                                 <span>:</span>
-                                <input type="number" class="tunnel-local-port" placeholder="Local Port" min="1" max="65535">
-                                <button type="button" class="btn btn-ghost btn-sm" onclick="removeTunnelRow(this)">×</button>
+                                <input type="number" class="tunnel-local-port" placeholder="Local Port" min="1"
+                                    max="65535">
+                                <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="removeTunnelRow(this)">×</button>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-ghost btn-sm" onclick="addTunnelRow()">+ Add Tunnel</button>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="addTunnelRow()">+ Add
+                            Tunnel</button>
                     </div>
                     <div class="form-group">
                         <label class="checkbox-label">
@@ -399,7 +421,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-ghost" onclick="closeModal('createProfileModal')">Cancel</button>
+                    <button type="button" class="btn btn-ghost"
+                        onclick="closeModal('createProfileModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Profile</button>
                 </div>
             </form>
@@ -451,17 +474,21 @@
                     <div class="form-group" id="editPasswordGroup" style="display: none;">
                         <label for="editProfilePassword">Password</label>
                         <input type="password" id="editProfilePassword" placeholder="Password">
-                        <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not written to profile files.</p>
+                        <p class="text-muted" style="margin-top: 6px;">Stored locally (webview local storage). Not
+                            written to profile files.</p>
                     </div>
                     <div class="form-group" id="editSshpassPathGroup" style="display: none;">
                         <label for="editProfileSshpassPath">sshpass/plink Path</label>
-                        <input type="text" id="editProfileSshpassPath" placeholder="/usr/bin/sshpass or C:\\Program Files\\PuTTY\\plink.exe">
-                        <p class="text-muted" style="margin-top: 6px;">Windows: Use PuTTY's plink.exe. Linux/Mac: Use sshpass. Leave empty if in PATH.</p>
+                        <input type="text" id="editProfileSshpassPath"
+                            placeholder="/usr/bin/sshpass or C:\\Program Files\\PuTTY\\plink.exe">
+                        <p class="text-muted" style="margin-top: 6px;">Windows: Use PuTTY's plink.exe. Linux/Mac: Use
+                            sshpass. Leave empty if in PATH.</p>
                     </div>
                     <div class="form-group">
                         <label>Tunnels</label>
                         <div class="tunnels-editor" id="editTunnelsEditor"></div>
-                        <button type="button" class="btn btn-ghost btn-sm" onclick="addEditTunnelRow()">+ Add Tunnel</button>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="addEditTunnelRow()">+ Add
+                            Tunnel</button>
                     </div>
                     <div class="form-group">
                         <label class="checkbox-label">
@@ -541,4 +568,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
